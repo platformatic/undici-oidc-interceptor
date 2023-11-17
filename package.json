@@ -1,0 +1,20 @@
+{
+  "name": "token-dispatcher",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "standard",
+    "test": "node --test tests/*.test.js"
+  },
+  "author": "Platformatic",
+  "license": "MIT",
+  "dependencies": {
+    "fast-jwt": "^3.3.1",
+    "undici": "^5.27.2"
+  },
+  "devDependencies": {
+    "fastify": "^4.24.3",
+    "standard": "^17.1.0"
+  }
+}
