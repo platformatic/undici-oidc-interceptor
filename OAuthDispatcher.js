@@ -3,6 +3,7 @@
 const { request, Agent, Pool } = require('undici')
 const { createDecoder } = require('fast-jwt')
 const OAuthHandler = require('./OAuthDispatchHandler')
+const { refreshAccessToken } = require('./utils')
 
 class OAuthDispatcher extends Agent {
   constructor (options) {
@@ -33,7 +34,7 @@ class OAuthDispatcher extends Agent {
       const { exp } = this.decode(this.accessToken)
       if (exp <= Date.now() / 1000) {
         try {
-          this.accessToken = await this.#refreshAccessToken(this.clientId)
+          this.accessToken = await refreshAccessToken(this.refreshEndpoint, this.refreshToken, this.clientId)
         } catch (err) {
           return handler.onError(err)
         }
@@ -54,28 +55,6 @@ class OAuthDispatcher extends Agent {
       const result = await dispatch(opts, handler)
       return result
     }.bind(this)
-  }
-
-  async #refreshAccessToken (clientId) {
-    const { statusCode, body } = await request(`${this.refreshEndpoint}/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token: this.refreshToken,
-        grant_type: 'refresh_token',
-        client_id: clientId
-      })
-    })
-
-    if (statusCode > 299) {
-      const { message } = await body.json()
-      throw new Error(`Failed to refresh access token - ${message}`)
-    }
-
-    const { access_token: accessToken } = await body.json()
-    return accessToken
   }
 }
 

@@ -2,6 +2,7 @@
 
 const { createDecoder } = require('fast-jwt')
 const { request } = require('undici')
+const { refreshAccessToken } = require('./utils')
 
 function parseHeaders (headers) {
   const output = {}
@@ -67,27 +68,9 @@ class OAuthHandler {
     }
 
     console.log('refreshing', { statusCode, opts: this.opts })
-    const refreshResponse = await request(`${this.refreshTokenUrl}/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token: this.refreshToken,
-        grant_type: 'refresh_token',
-        client_id: this.clientId
-      })
-    })
-
-    if (refreshResponse.statusCode > 299) {
-      const { message } = await refreshResponse.body.json()
-      throw new Error(`Failed to refresh access token - ${message}`)
-    }
-
-    const { access_token: accessToken } = await refreshResponse.body.json()
-    console.log('refreshed', { accessToken })
-    this.accessToken = accessToken
+    this.accessToken = await refreshAccessToken(this.refreshTokenUrl, this.refreshToken, this.clientId)
     this.tokenRefreshed = true
+    console.log('refreshed', { at: this.accessToken, tokenRefreshed: this.tokenRefreshed })
 
     const parsedHeaders = parseHeaders(headers)
     parsedHeaders.authorization = `Bearer ${this.accessToken}`
