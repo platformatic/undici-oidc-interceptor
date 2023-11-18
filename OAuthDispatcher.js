@@ -45,7 +45,6 @@ class OAuthDispatcher extends Agent {
 
       const oauthHandler = new OAuthHandler({
         oauthOpts: {
-          accessToken: this.accessToken,
           refreshToken: this.refreshToken,
           retryOnStatuses: [401, 403],
           refreshTokenUrl: this.refreshEndpoint,
@@ -53,6 +52,7 @@ class OAuthDispatcher extends Agent {
         }
       }, dispatch, handler)
       const result = await dispatch(opts, handler)
+      // TODO if the OAuthHandler refreshes the token, how do we get it back?
       return result
     }.bind(this)
   }

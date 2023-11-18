@@ -2,7 +2,14 @@
 
 const { createDecoder } = require('fast-jwt')
 const { request } = require('undici')
-const { refreshAccessToken } = require('./utils')
+const { refreshAccessTokenOptions } = require('./utils')
+
+const STATE = {
+  INITIAL: 0,
+  REFRESHING: 1,
+  PARSING: 2,
+  RETRYING: 3
+}
 
 function parseHeaders (headers) {
   const output = {}
@@ -26,30 +33,37 @@ function parseHeaders (headers) {
 class OAuthHandler {
   constructor (opts, dispatch, handler) {
     const { oauthOpts, ...dispatchOpts } = opts
-    console.log({ opts })
+    console.log('HANDLER', { opts })
 
+    // orignal request
     this.dispatch = dispatch
     this.handler = handler
-    this.opts = dispatchOpts
+    this.origOpts = dispatchOpts
 
-    this.accessToken = oauthOpts.accessToken
+    // refresh request
+    this.currentState = STATE.INITIAL
+    this.refreshOpt = null
+    this.accessTokenChunks = ''
+
+    // oauth tools
     this.refreshToken = oauthOpts.refreshToken
-    this.decode = createDecoder()
     this.retryOnStatuses = oauthOpts.retryOnStatuses
+    this.decode = createDecoder()
 
-    // TODO use fast-jwt to get iss and sub
+    // TODO use fast-jwt to get iss and sub and do it before refresh
     this.clientId = oauthOpts.clientId
     this.refreshTokenUrl = oauthOpts.refreshTokenUrl
-
   }
 
   onUpgrade (...params) {
+    console.log('HANDLER onUpgrade')
     if (this.handler.onUpgrade) {
       return this.handler.onUpgrade(...params)
     }
   }
 
   onConnect (abort, ctx) {
+    console.log('HANDLER onConnect')
     this.abort = abort
     return this.handler.onConnect(abort)
   }
@@ -62,30 +76,25 @@ class OAuthHandler {
   // make a request to the refresh token url
   // resend request with new access token
   async onHeaders (statusCode, headers, resume) {
-    console.log('onHeaders')
+    console.log('HANDLER onHeaders')
+    if (this.currentState === STATE.REFRESHING) {
+      this.currentState = STATE.PARSING
+    }
+
     if (!this.retryOnStatuses.includes(statusCode)) {
       return this.handler.onHeaders(statusCode, headers, resume)
     }
 
-    console.log('refreshing', { statusCode, opts: this.opts })
-    this.accessToken = await refreshAccessToken(this.refreshTokenUrl, this.refreshToken, this.clientId)
-    this.tokenRefreshed = true
-    console.log('refreshed', { at: this.accessToken, tokenRefreshed: this.tokenRefreshed })
-
-    const parsedHeaders = parseHeaders(headers)
-    parsedHeaders.authorization = `Bearer ${this.accessToken}`
-    console.log('liar')
-
-    /*
-    const rawHeaders = Object.entries(parsedHeaders).reduce((acc, [key, value]) => {
-      acc.push(Buffer.from(key))
-      acc.push(Buffer.from(value))
-      return acc
-    }, [])
-    */
-    console.log('pre-opts', this.opts)
-    this.opts.headers = { ...this.opts.headers, ...parsedHeaders }
-    console.log('post-opts', this.opts)
+    // TODO chnge the refresh shared method to return an object with request options
+    // store those in `this.optsi
+    // set 'refresh flag'
+    // call dispatch with new options in `onComplete`
+    // set access token
+    // retry original call
+    if (this.currentState === STATE.INITIAL) {
+      this.refreshOpt = refreshAccessTokenOptions(this.refreshTokenUrl, this.clientId, this.refreshToken)
+      this.currentState = STATE.REFRESHING
+    }
   }
 
   onError (err) {
@@ -93,7 +102,10 @@ class OAuthHandler {
   }
 
   onData (chunk) {
-    console.log('onData')
+    if (this.currentState === STATE.PARSING) {
+      this.refreshResponseChunks += chunk
+    }
+
     return this.handler.onData(chunk)
   }
 
@@ -101,11 +113,21 @@ class OAuthHandler {
   // reset flag
   // dispatch to original url
   onComplete (trailers) {
-    console.log('onComplete', { tokenRefreshed: this.tokenRefreshed })
-    if (!this.tokenRefreshed) return this.handler.onComplete(trailers)
-
-    this.tokenRefreshed = false
-    return this.dispatch(this.opts, this)
+    switch (this.currentState) {
+      case STATE.REFRESHING:
+        console.log('HANDLER onComplete REFRESHING', { refreshOpt: this.refreshOpt, opts: this.origOpts })
+        // TODO this does not seem to dispatch to the refresh endpoint
+        return this.dispatch(this.refreshOpts, this)
+      case STATE.PARSING:
+        console.log('HANDLER onComplete PARSING')
+        const accessToken = JSON.parse(this.refreshResponseChunks).access_token
+        console.log({ accessToken })
+        this.origOpts.headers.authorization = `Bearer ${accessToken}`
+        return this.dispatch(this.origOpts, this)
+      default:
+        console.log('HANDLER onComplete DEFAULT')
+        return this.handler.onComplete(trailers)
+    }
   }
 }
 

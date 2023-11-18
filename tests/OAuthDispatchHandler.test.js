@@ -77,14 +77,14 @@ test('request a new access token and retry when server rejects', { only: true },
 
   // create server and check requests
   const server = createServer((req, res) => {
-    console.log('server')
+    console.log('TEST server')
     if (!req.headers.authorization) {
-      console.log('no auth')
+      console.log('TEST no auth')
       res.writeHead(403)
       return res.end()
     }
 
-    console.log('authed')
+    console.log('TEST authed')
     ee.emit('request', req.headers)
 
     res.writeHead(200)
@@ -93,7 +93,7 @@ test('request a new access token and retry when server rejects', { only: true },
   server.listen(0)
 
   const tokenServer = createServer((req, res) => {
-    console.log('token server')
+    console.log('TEST token server')
     assert.strictEqual(req.method, 'POST')
     assert.strictEqual(req.url, '/token')
 
@@ -106,7 +106,7 @@ test('request a new access token and retry when server rejects', { only: true },
     })
 
     const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
-    console.log('from token server', accessToken)
+    console.log('TEST from token server', accessToken)
     res.writeHead(200)
     res.end(JSON.stringify({ access_token: accessToken }))
   })

@@ -2,6 +2,27 @@
 
 const { request } = require('undici')
 
+function refreshAccessTokenOptions (domain, clientId, refreshToken, opts = {}) {
+  const { path, method, headers } = {
+    ...opts,
+    path: '/token',
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+  }
+
+  return {
+    origin: domain,
+    path,
+    method,
+    headers,
+    body: JSON.stringify({
+      token: refreshToken,
+      grant_type: 'refresh_token',
+      client_id: clientId
+    })
+  }
+}
+
 async function refreshAccessToken (refreshEndpoint, clientId, refreshToken) {
   const { statusCode, body } = await request(`${refreshEndpoint}/token`, {
     method: 'POST',
@@ -25,5 +46,6 @@ async function refreshAccessToken (refreshEndpoint, clientId, refreshToken) {
 }
 
 module.exports = {
-  refreshAccessToken
+  refreshAccessToken,
+  refreshAccessTokenOptions
 }
