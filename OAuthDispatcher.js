@@ -3,16 +3,18 @@
 const { createDecoder } = require('fast-jwt')
 const { refreshAccessToken, refreshAccessTokenOptions } = require('./utils')
 
-// TODO use this to pull iss and sub from refreshToken
 const decode = createDecoder()
 
 class DispatchHandler {
   constructor (dispatch, handler, options) {
     this.dispatch = dispatch
     this.handler = handler
+
     const { oAuthOpt, ...rest } = options
-    this.options = rest
     this.oAuthOpt = oAuthOpt
+    this.origOpts = rest
+
+    this.refreshOpt = refreshAccessTokenOptions(oAuthOpt.refreshHost, oAuthOpt.clientId, oAuthOpt.refreshToken)
     this.attemptRefresh = false
   }
 
@@ -36,17 +38,8 @@ class DispatchHandler {
   }
 
   onHeaders (statusCode, headers, resume, statusText) {
-    console.log('onHeaders', { statusCode, headers, resume, statusText })
+    // console.log('onHeaders', { statusCode, headers, resume, statusText })
     if (statusCode === 401) {
-      this.origOpt = { ...this.options }
-
-      const {
-        refreshToken,
-        clientId,
-        refreshHost: domain
-      } = this.oAuthOpt
-
-      this.refreshOpt = refreshAccessTokenOptions(domain, clientId, refreshToken)
       this.attemptRefresh = true
     }
 
@@ -54,10 +47,10 @@ class DispatchHandler {
   }
 
   onComplete (trailers) {
-    console.log('onComplete', { trailers, refreshOpt: this.refreshOpt })
+    // console.log('onComplete', { trailers, refreshOpt: this.refreshOpt })
     if (this.attemptRefresh) {
       this.attemptRefresh = false
-      console.log('attempting refresh')
+      // console.log('attempting refresh')
       this.abort = null
       this.dispatch(this.refreshOpt, this)
     } else {
@@ -77,17 +70,23 @@ function createOAuthInterceptor (options) {
   let { accessToken } = { ...options }
   const {
     refreshToken,
-    refreshHost,
-    clientId
+    retryOnStatusCodes
   } = { ...options }
-  const oAuthOpt = { refreshToken, refreshHost, clientId }
+
+  const { iss, sub } = decode(refreshToken)
+  const oAuthOpt = {
+    refreshToken,
+    retryOnStatusCodes,
+    refreshHost: iss,
+    clientId: sub
+  }
 
   return dispatch => {
     return function Intercept (opts, handler) {
       const oauthHandler = new DispatchHandler(dispatch, handler, { ...opts, oAuthOpt })
 
       if (isTokenExpired(accessToken)) {
-        return refreshAccessToken(refreshHost, refreshToken, clientId)
+        return refreshAccessToken(oAuthOpt.refreshHost, refreshToken, oAuthOpt.clientId)
           .then(newAccessToken => {
             accessToken = newAccessToken
             opts.headers = {
@@ -103,7 +102,7 @@ function createOAuthInterceptor (options) {
       if (!opts.headers) opts.headers = []
       opts.headers.push('authorization', `Bearer ${accessToken}`)
 
-      console.log('down here', { opts })
+      // console.log('down here', { opts })
 
       return dispatch(opts, oauthHandler)
     }
