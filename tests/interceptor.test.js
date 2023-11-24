@@ -123,7 +123,7 @@ test('refresh access token if expired', async (t) => {
   assert.strictEqual(statusCode, 200)
 })
 
-test('refresh access token if server rejects, retry request', { only: true }, async (t) => {
+test('refresh access token if server rejects, retry request', async (t) => {
   let accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const ee = new EventEmitter()
 
@@ -144,7 +144,6 @@ test('refresh access token if server rejects, retry request', { only: true }, as
   mainServer.listen(0)
 
   const tokenServer = http.createServer((req, res) => {
-    console.log('tokenServer', req.url)
     assert.strictEqual(req.method, 'POST')
     assert.strictEqual(req.url, '/token')
 
@@ -175,8 +174,13 @@ test('refresh access token if server rejects, retry request', { only: true }, as
     }
   })
 
+  const p = Promise.all([
+    once(ee, 'token-refreshed'),
+    once(ee, 'request-processed')
+  ])
+
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
-  await once(ee, 'token-refreshed')
-  await once(ee, 'request-processed')
+
+  await p
 })

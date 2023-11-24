@@ -2,62 +2,9 @@
 
 const { createDecoder } = require('fast-jwt')
 const { refreshAccessToken, refreshAccessTokenOptions } = require('./utils')
+const { RetryHandler } = require('undici')
 
 const decode = createDecoder()
-
-class DispatchHandler {
-  constructor (dispatch, handler, options) {
-    this.dispatch = dispatch
-    this.handler = handler
-
-    const { oAuthOpt, ...rest } = options
-    this.oAuthOpt = oAuthOpt
-    this.origOpts = rest
-
-    this.refreshOpt = refreshAccessTokenOptions(oAuthOpt.refreshHost, oAuthOpt.clientId, oAuthOpt.refreshToken)
-    this.attemptRefresh = false
-  }
-
-  onConnect (abort) { return this.handler.onConnect(abort) }
-  onError (err) { return this.handler.onError(err) }
-
-  onUpgrade (statusCode, headers, socket) {
-    if (this.handler.onUpgrade) {
-      return this.handler.onUpgrade(statusCode, headers, socket)
-    }
-  }
-  onData (chunk) {
-    if (this.handler.onData) {
-      return this.handler.onData(chunk)
-    }
-  }
-  onBodySent (chunk) {
-    if (this.handler.onBodySent) {
-      return this.handler.onBodySent(chunk)
-    }
-  }
-
-  onHeaders (statusCode, headers, resume, statusText) {
-    // console.log('onHeaders', { statusCode, headers, resume, statusText })
-    if (statusCode === 401) {
-      this.attemptRefresh = true
-    }
-
-    return this.handler.onHeaders(statusCode, headers, resume, statusText)
-  }
-
-  onComplete (trailers) {
-    // console.log('onComplete', { trailers, refreshOpt: this.refreshOpt })
-    if (this.attemptRefresh) {
-      this.attemptRefresh = false
-      // console.log('attempting refresh')
-      this.abort = null
-      this.dispatch(this.refreshOpt, this)
-    } else {
-      return this.handler.onComplete(trailers)
-    }
-  }
-}
 
 function isTokenExpired (token) {
   if (!token) return true
@@ -83,7 +30,38 @@ function createOAuthInterceptor (options) {
 
   return dispatch => {
     return function Intercept (opts, handler) {
-      const oauthHandler = new DispatchHandler(dispatch, handler, { ...opts, oAuthOpt })
+      if (opts.oauthRetry) {
+        return refreshAccessToken(oAuthOpt.refreshHost, refreshToken, oAuthOpt.clientId)
+          .then(newAccessToken => {
+            accessToken = newAccessToken
+
+            const authIndex = opts.headers.findIndex(header => header === 'authorization')
+            opts.headers[authIndex + 1] = `Bearer ${accessToken}`
+            return dispatch(opts, handler)
+          })
+      }
+
+      if (!opts.headers) opts.headers = []
+      opts.headers.push('authorization', `Bearer ${accessToken}`)
+
+      const { dispatcher } = opts
+
+      const retryHandler = new RetryHandler({
+        ...opts,
+        oauthRetry: true,
+        retryOptions: {
+          statusCodes:  [401],
+          maxRetries: 1,
+          retryAfter: 0,
+          minTimeout: 0,
+          timeoutFactor: 1
+        }
+      }, {
+        dispatch (opts, handler) {
+          return dispatcher.dispatch(opts, handler)
+        },
+        handler
+      })
 
       if (isTokenExpired(accessToken)) {
         return refreshAccessToken(oAuthOpt.refreshHost, refreshToken, oAuthOpt.clientId)
@@ -94,17 +72,12 @@ function createOAuthInterceptor (options) {
               authorization: `Bearer ${accessToken}`
             }
 
-            return dispatch(opts, oauthHandler)
+            return dispatch(opts, retryHandler)
           })
           .catch(err => handler.onError(err))
       }
 
-      if (!opts.headers) opts.headers = []
-      opts.headers.push('authorization', `Bearer ${accessToken}`)
-
-      // console.log('down here', { opts })
-
-      return dispatch(opts, oauthHandler)
+      return dispatch(opts, retryHandler)
     }
   }
 }
