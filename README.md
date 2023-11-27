@@ -12,8 +12,8 @@ const dispatcher = new Agent({
       // Provide a refresh token so the interceptor can manage the access token
       refreshToken: '',
 
-      // Set the status codes that the interceptor should refresh access and
-      // retry the request
+      // Set an array of status codes that the interceptor should refresh and
+      // retry the request on
       retryOnStatusCodes: [401],
 
       // The domains that this interceptor will manage

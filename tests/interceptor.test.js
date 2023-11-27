@@ -6,8 +6,8 @@ const http = require('node:http')
 const { once, EventEmitter } = require('node:events')
 const { request, Agent } = require('undici')
 const { createDecoder } = require('fast-jwt')
-const { createOAuthInterceptor } = require('../OAuthDispatcher')
-const { createToken } = require('./helper.js')
+const { createOAuthInterceptor } = require('../oauth-interceptor')
+const { createToken } = require('./helper')
 
 test('attach provided access token to the request', async (t) => {
   const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
