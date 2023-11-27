@@ -267,3 +267,55 @@ test('request is intercepted', async (t) => {
   })
   assert.strictEqual(statusCode, 200)
 })
+
+test('token created only once', async (t) => {
+  let accessToken = ''
+  const mainServer = http.createServer((req, res) => {
+    assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    res.writeHead(200)
+    res.end()
+  })
+  mainServer.listen(0)
+
+  let tokenRequestCount = 0
+  const tokenServer = http.createServer((req, res) => {
+    tokenRequestCount += 1
+    if (tokenRequestCount > 1) assert.fail('should only be called once')
+    assert.strictEqual(req.method, 'POST')
+    assert.strictEqual(req.url, '/token')
+
+    accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken }))
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    mainServer.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+  )
+
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({
+        refreshToken,
+        retryOnStatusCodes: [401]
+      })]
+    }
+  })
+
+  const results = await Promise.all([
+    request(`http://localhost:${mainServer.address().port}`, { dispatcher }),
+    request(`http://localhost:${mainServer.address().port}`, { dispatcher })
+  ])
+
+  for (const { statusCode } of results) {
+    assert.strictEqual(statusCode, 200)
+  }
+})

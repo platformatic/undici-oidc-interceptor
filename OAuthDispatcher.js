@@ -13,6 +13,20 @@ function isTokenExpired (token) {
   return exp <= Date.now() / 1000
 }
 
+let _requestingRefresh
+function callRefreshToken (refreshHost, refreshToken, clientId) {
+  if (_requestingRefresh) return _requestingRefresh
+
+  _requestingRefresh = refreshAccessToken(refreshHost, refreshToken, clientId)
+  _requestingRefresh.catch(() => _requestingRefresh = null)
+  _requestingRefresh.then((result) => {
+    _requestingRefresh = null
+    return result
+  })
+
+  return _requestingRefresh
+}
+
 function createOAuthInterceptor (options) {
   let { accessToken } = { ...options }
   const {
@@ -36,7 +50,7 @@ function createOAuthInterceptor (options) {
       }
 
       if (opts.oauthRetry) {
-        return refreshAccessToken(refreshHost, refreshToken, clientId)
+        return callRefreshToken(refreshHost, refreshToken, clientId)
           .then(newAccessToken => {
             accessToken = newAccessToken
 
@@ -69,7 +83,7 @@ function createOAuthInterceptor (options) {
       })
 
       if (isTokenExpired(accessToken)) {
-        return refreshAccessToken(refreshHost, refreshToken, clientId)
+        return callRefreshToken(refreshHost, refreshToken, clientId)
           .then(newAccessToken => {
             accessToken = newAccessToken
             opts.headers = {
