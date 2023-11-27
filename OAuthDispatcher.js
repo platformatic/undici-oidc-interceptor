@@ -17,21 +17,26 @@ function createOAuthInterceptor (options) {
   let { accessToken } = { ...options }
   const {
     refreshToken,
-    retryOnStatusCodes
-  } = { ...options }
-
-  const { iss, sub } = decode(refreshToken)
-  const oAuthOpt = {
-    refreshToken,
     retryOnStatusCodes,
-    refreshHost: iss,
-    clientId: sub
+    interceptDomains
+  } = {
+    retryOnStatusCodes: [401],
+    interceptDomains: [],
+    refreshToken: '',
+    ...options
   }
+
+  const { iss: refreshHost, sub: clientId } = decode(refreshToken)
 
   return dispatch => {
     return function Intercept (opts, handler) {
+      if (!opts.oauthRetry && (interceptDomains.length > 0 && !interceptDomains.includes(opts.origin))) {
+        // do not attempt intercept
+        return dispatch(opts, handler)
+      }
+
       if (opts.oauthRetry) {
-        return refreshAccessToken(oAuthOpt.refreshHost, refreshToken, oAuthOpt.clientId)
+        return refreshAccessToken(refreshHost, refreshToken, clientId)
           .then(newAccessToken => {
             accessToken = newAccessToken
 
@@ -64,7 +69,7 @@ function createOAuthInterceptor (options) {
       })
 
       if (isTokenExpired(accessToken)) {
-        return refreshAccessToken(oAuthOpt.refreshHost, refreshToken, oAuthOpt.clientId)
+        return refreshAccessToken(refreshHost, refreshToken, clientId)
           .then(newAccessToken => {
             accessToken = newAccessToken
             opts.headers = {

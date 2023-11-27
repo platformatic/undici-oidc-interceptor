@@ -184,3 +184,86 @@ test('refresh access token if server rejects, retry request', async (t) => {
 
   await p
 })
+
+test('do not intercept request', async (t) => {
+  const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+
+  const server = http.createServer((req, res) => {
+    res.writeHead(200)
+    res.end()
+  })
+  server.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    assert.fail('should not be called')
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken }))
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    server.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+  )
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({
+        accessToken,
+        refreshToken,
+        interceptDomains: ['example.com']
+      })]
+    }
+  })
+
+  const { statusCode } = await request(`http://localhost:${server.address().port}`, { dispatcher })
+  assert.strictEqual(statusCode, 200)
+})
+
+test('request is intercepted', async (t) => {
+  const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+
+  const server = http.createServer((req, res) => {
+    assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    res.writeHead(200)
+    res.end()
+  })
+  server.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    assert.strictEqual(req.method, 'POST')
+    assert.strictEqual(req.url, '/token')
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken }))
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    server.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+  )
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({
+        accessToken,
+        refreshToken,
+        interceptDomains: [`localhost:${server.address().port}`]
+      })]
+    }
+  })
+
+  const { statusCode } = await request(`http://localhost:${server.address().port}`, {
+    dispatcher,
+    headers: { authorization: `Bearer ${accessToken}` }
+  })
+  assert.strictEqual(statusCode, 200)
+})
