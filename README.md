@@ -10,17 +10,22 @@ const dispatcher = new Agent({
   intercpetors: {
     Pool: [createOAuthIntercpetor({
       // Provide a refresh token so the interceptor can manage the access token
+      // The refresh token must include an issuer (`iss`)
       refreshToken: '',
 
       // Set an array of status codes that the interceptor should refresh and
       // retry the request on
       retryOnStatusCodes: [401],
 
-      // The domains that this interceptor will manage
-      interceptDomains: []
+      // The origins that this interceptor will manage
+      origins: []
 
       // OPTIONAL: an initial access token
       accessToken: ''
+
+      // OPTIONAL: clientId that matches refresh token
+      // Default: the `sub` claim in the refresh token
+      clientId: null
     })]
   }
 })

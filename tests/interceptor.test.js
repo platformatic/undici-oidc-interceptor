@@ -62,14 +62,15 @@ test('get an access token if no token provided', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}` }
   )
 
   const dispatcher = new Agent({
     interceptors: {
       Pool: [createOAuthInterceptor({
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        clientId: 'client-id'
       })]
     }
   })
@@ -371,4 +372,41 @@ test('only retries on provided status codes', async (t) => {
   })
 
   await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
+})
+
+test('error handling on creation', async (t) => {
+
+  {
+    const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d', sub: 'some-client' })
+
+    assert.throws(() => {
+      new Agent({
+        interceptors: {
+          Pool: [createOAuthInterceptor({ refreshToken })]
+        }
+      })
+    }, { message: 'refreshToken is invalid: iss is required' })
+  }
+
+  {
+    assert.throws(() => {
+      new Agent({
+        interceptors: {
+          Pool: [createOAuthInterceptor({ refreshToken: '' })]
+        }
+      })
+    }, { message: 'refreshToken is required' })
+  }
+
+  {
+    const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d', iss: 'http://google.com' })
+
+    assert.throws(() => {
+      new Agent({
+        interceptors: {
+          Pool: [createOAuthInterceptor({ refreshToken })]
+        }
+      })
+    }, { message: 'No clientId provided' })
+  }
 })

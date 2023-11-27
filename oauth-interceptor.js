@@ -32,36 +32,44 @@ function createOAuthInterceptor (options) {
   const {
     refreshToken,
     retryOnStatusCodes,
-    interceptDomains
+    origins,
+    clientId
   } = {
     retryOnStatusCodes: [401],
-    interceptDomains: [],
+    origins: [],
     refreshToken: '',
     ...options
   }
 
-  const { iss: refreshHost, sub: clientId } = decode(refreshToken)
+  if (!refreshToken) {
+    throw new Error('refreshToken is required')
+  }
+
+  const { iss, sub } = decode(refreshToken)
+  if (!iss) throw new Error('refreshToken is invalid: iss is required')
+  if (!sub && !clientId) throw new Error('No clientId provided')
+
+  const refreshHost = iss
+  const client = clientId || sub
 
   return dispatch => {
     return function Intercept (opts, handler) {
-      if (!opts.oauthRetry && (interceptDomains.length > 0 && !interceptDomains.includes(opts.origin))) {
+      if (!opts.oauthRetry && (origins.length > 0 && !origins.includes(opts.origin))) {
         // do not attempt intercept
         return dispatch(opts, handler)
       }
 
       if (opts.oauthRetry) {
-        return callRefreshToken(refreshHost, refreshToken, clientId)
+        return callRefreshToken(refreshHost, refreshToken, client)
           .then(newAccessToken => {
             accessToken = newAccessToken
 
-            const authIndex = opts.headers.findIndex(header => header === 'authorization')
-            opts.headers[authIndex + 1] = `Bearer ${accessToken}`
+            opts.headers.authorization = `Bearer ${accessToken}`
             return dispatch(opts, handler)
           })
       }
 
-      if (!opts.headers) opts.headers = []
-      opts.headers.push('authorization', `Bearer ${accessToken}`)
+      if (!opts.headers) opts.headers = { authorization: `Bearer ${accessToken}` }
 
       const { dispatcher } = opts
 
@@ -83,7 +91,7 @@ function createOAuthInterceptor (options) {
       })
 
       if (isTokenExpired(accessToken)) {
-        return callRefreshToken(refreshHost, refreshToken, clientId)
+        return callRefreshToken(refreshHost, refreshToken, client)
           .then(newAccessToken => {
             accessToken = newAccessToken
             opts.headers = {
