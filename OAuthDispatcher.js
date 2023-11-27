@@ -1,7 +1,7 @@
 'use strict'
 
 const { createDecoder } = require('fast-jwt')
-const { refreshAccessToken, refreshAccessTokenOptions } = require('./utils')
+const { refreshAccessToken } = require('./utils')
 const { RetryHandler } = require('undici')
 
 const decode = createDecoder()
