@@ -69,7 +69,7 @@ function createOAuthInterceptor (options) {
         ...opts,
         oauthRetry: true,
         retryOptions: {
-          statusCodes:  [401],
+          statusCodes:  retryOnStatusCodes,
           maxRetries: 1,
           retryAfter: 0,
           minTimeout: 0,
