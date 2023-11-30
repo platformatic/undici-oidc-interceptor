@@ -1,5 +1,5 @@
 {
-  "name": "token-dispatcher",
+  "name": "undici-oauth-interceptor",
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
@@ -10,8 +10,8 @@
   "author": "Platformatic",
   "license": "MIT",
   "dependencies": {
-    "fast-jwt": "^3.3.1",
-    "undici": "^5.27.2"
+    "fast-jwt": "^3.3.2",
+    "undici": "^5.28.2"
   },
   "devDependencies": {
     "fastify": "^4.24.3",

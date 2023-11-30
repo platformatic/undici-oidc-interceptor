@@ -1,4 +1,4 @@
 'use strict'
 
-const OAuthDispatcher = require('./OAuthDispatcher')
-module.exports.OAuthDispatcher = OAuthDispatcher
+const { createOAuthInterceptor } = require('./oauth-interceptor')
+module.exports.createOAuthInterceptor = createOAuthInterceptor
