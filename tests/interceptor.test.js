@@ -508,3 +508,83 @@ test('error handling on creation', async (t) => {
     }, { message: 'No clientId provided' })
   }
 })
+
+/*
+ * optimistic refresh
+ * token near expiration on first request
+ * make second request which uses new token
+ */
+test('optimistic refresh', async (t) => {
+  const ee = new EventEmitter()
+  let accessToken = createToken({ name: 'access' }, { expiresIn: '29s' })
+
+  let requestCount = 0
+  const mainServer = http.createServer((req, res) => {
+    requestCount += 1
+    if (requestCount === 1) {
+      assert.ok(req.headers.authorization.length > 'Bearer '.length)
+      assert.notStrictEqual(req.headers.authorization, `Bearer ${accessToken}`, 'token should not be the same on first request')
+    } else {
+      assert.ok(req.headers.authorization.length > 'Bearer '.length)
+      assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`, 'token should be the same on second request')
+    }
+
+    res.writeHead(200)
+    res.end()
+  })
+  mainServer.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    assert.strictEqual(req.method, 'POST')
+    assert.strictEqual(req.url, '/token')
+
+    let body = ''
+    req.on('data', chunk => body += chunk)
+    req.on('end', () => {
+      const { grant_type } = JSON.parse(body)
+      assert.strictEqual(grant_type, 'refresh_token')
+    })
+
+    accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken }))
+    ee.emit('token-refreshed')
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    mainServer.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+  )
+
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({
+        accessToken,
+        refreshToken,
+        retryOnStatusCodes: [401]
+      })]
+    }
+  })
+
+  const tokenRefreshed = once(ee, 'token-refreshed')
+
+  {
+    const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
+    assert.strictEqual(statusCode, 200)
+  }
+
+  await tokenRefreshed
+
+  {
+    const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
+    assert.strictEqual(statusCode, 200)
+  }
+
+  assert.strictEqual(requestCount, 2)
+})
