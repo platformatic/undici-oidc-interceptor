@@ -5,14 +5,24 @@ const { refreshAccessToken } = require('./utils')
 const { RetryHandler } = require('undici')
 
 const decode = createDecoder()
-const THIRTY_SECONDS_MS = 30 * 1000
+const EXP_DIFF_MS = 10 * 1000
+const NEAR_EXP_DIFF_MS = 30 * 1000
 
-function isTokenExpired (token) {
-  if (!token) return true
+const TOKEN_STATE = {
+  VALID: 'VALID',
+  EXPIRED: 'EXPIRED',
+  NEAR_EXPIRATION: 'NEAR_EXPIRATION'
+}
+
+function getTokenState (token) {
+  if (!token) return TOKEN_STATE.EXPIRED
 
   const { exp } = decode(token)
-  const nowWithBuffer = (Date.now() + THIRTY_SECONDS_MS) / 1000
-  return exp <= nowWithBuffer
+
+  if (!exp) return TOKEN_STATE.EXPIRED
+  if (exp <= (Date.now() + EXP_DIFF_MS) / 1000) return TOKEN_STATE.EXPIRED
+  if (exp <= (Date.now() + NEAR_EXP_DIFF_MS) / 1000) return TOKEN_STATE.NEAR_EXPIRATION
+  return TOKEN_STATE.VALID
 }
 
 let _requestingRefresh
@@ -95,21 +105,29 @@ function createOAuthInterceptor (options) {
         handler
       })
 
-      if (isTokenExpired(accessToken)) {
-        return callRefreshToken(refreshHost, refreshToken, client)
-          .then(newAccessToken => {
-            accessToken = newAccessToken
-            opts.headers = {
-              ...opts.headers,
-              authorization: `Bearer ${accessToken}`
-            }
-
-            return dispatch(opts, retryHandler)
-          })
-          .catch(err => handler.onError(err))
+      const saveTokenAndRetry = newAccessToken => {
+        accessToken = newAccessToken
+        opts.headers = {
+          ...opts.headers,
+          authorization: `Bearer ${accessToken}`
+        }
+        return dispatch(opts, retryHandler)
       }
 
-      return dispatch(opts, retryHandler)
+      switch (getTokenState(accessToken)) {
+        case TOKEN_STATE.EXPIRED:
+          return callRefreshToken(refreshHost, refreshToken, client)
+            .then(saveTokenAndRetry)
+            .catch(err => handler.onError(err))
+        case TOKEN_STATE.NEAR_EXPIRATION:
+          callRefreshToken(refreshHost, refreshToken, client)
+            .then(newAccessToken => {
+              accessToken = newAccessToken
+            })
+            .catch(/* do nothing */)
+        default:
+          return dispatch(opts, retryHandler)
+      }
     }
   }
 }

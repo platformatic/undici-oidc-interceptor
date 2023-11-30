@@ -125,11 +125,12 @@ test('refresh access token if expired', async (t) => {
 })
 
 test('refresh token within refresh window', async (t) => {
-  let accessToken = createToken({ name: 'access' }, { expiresIn: '20s' })
+  const ee = new EventEmitter()
+  let accessToken = createToken({ name: 'access' }, { expiresIn: '29s' })
 
   const mainServer = http.createServer((req, res) => {
     assert.ok(req.headers.authorization.length > 'Bearer '.length)
-    assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    assert.notStrictEqual(req.headers.authorization, `Bearer ${accessToken}`)
     res.writeHead(200)
     res.end()
   })
@@ -149,6 +150,7 @@ test('refresh token within refresh window', async (t) => {
     accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
     res.writeHead(200)
     res.end(JSON.stringify({ access_token: accessToken }))
+    ee.emit('token-refreshed')
   })
   tokenServer.listen(0)
 
@@ -172,8 +174,12 @@ test('refresh token within refresh window', async (t) => {
     }
   })
 
+  const tokenRefreshed = once(ee, 'token-refreshed')
+
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
+
+  await tokenRefreshed
 })
 
 test('do not refresh just outside of refresh window', async (t) => {
