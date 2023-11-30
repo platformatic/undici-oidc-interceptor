@@ -124,6 +124,98 @@ test('refresh access token if expired', async (t) => {
   assert.strictEqual(statusCode, 200)
 })
 
+test('refresh token within refresh window', async (t) => {
+  let accessToken = createToken({ name: 'access' }, { expiresIn: '20s' })
+
+  const mainServer = http.createServer((req, res) => {
+    assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    res.writeHead(200)
+    res.end()
+  })
+  mainServer.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    assert.strictEqual(req.method, 'POST')
+    assert.strictEqual(req.url, '/token')
+
+    let body = ''
+    req.on('data', chunk => body += chunk)
+    req.on('end', () => {
+      const { grant_type } = JSON.parse(body)
+      assert.strictEqual(grant_type, 'refresh_token')
+    })
+
+    accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken }))
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    mainServer.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+  )
+
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({
+        accessToken,
+        refreshToken,
+        retryOnStatusCodes: [401]
+      })]
+    }
+  })
+
+  const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
+  assert.strictEqual(statusCode, 200)
+})
+
+test('do not refresh just outside of refresh window', async (t) => {
+  let accessToken = createToken({ name: 'access' }, { expiresIn: '40s' }) // 10s outside of refresh window
+
+  const mainServer = http.createServer((req, res) => {
+    assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    res.writeHead(200)
+    res.end()
+  })
+  mainServer.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    t.fail('should not be called')
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    mainServer.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+  )
+
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({
+        accessToken,
+        refreshToken,
+        retryOnStatusCodes: [401]
+      })]
+    }
+  })
+
+  const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
+  assert.strictEqual(statusCode, 200)
+})
+
 test('refresh access token if server rejects, retry request', async (t) => {
   let accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const ee = new EventEmitter()

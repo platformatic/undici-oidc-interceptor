@@ -5,12 +5,14 @@ const { refreshAccessToken } = require('./utils')
 const { RetryHandler } = require('undici')
 
 const decode = createDecoder()
+const THIRTY_SECONDS_MS = 30 * 1000
 
 function isTokenExpired (token) {
   if (!token) return true
 
   const { exp } = decode(token)
-  return exp <= Date.now() / 1000
+  const nowWithBuffer = (Date.now() + THIRTY_SECONDS_MS) / 1000
+  return exp <= nowWithBuffer
 }
 
 let _requestingRefresh
