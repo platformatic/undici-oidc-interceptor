@@ -69,7 +69,10 @@ function createOAuthInterceptor (options) {
           })
       }
 
-      if (!opts.headers) opts.headers = { authorization: `Bearer ${accessToken}` }
+      if (!opts.headers) opts.headers = {}
+      if (accessToken && !opts.headers.authorization) {
+        opts.headers.authorization = `Bearer ${accessToken}`
+      }
 
       const { dispatcher } = opts
 
