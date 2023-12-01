@@ -1,7 +1,7 @@
 {
   "name": "undici-oauth-interceptor",
-  "version": "0.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Automatically manage OAuth 2.0 access tokens for Undici requests",
   "main": "index.js",
   "scripts": {
     "lint": "standard",
