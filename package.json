@@ -11,7 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "fast-jwt": "^3.3.2",
-    "undici": "^5.28.2"
+    "undici": "^6.0.0"
   },
   "devDependencies": {
     "fastify": "^4.24.3",
