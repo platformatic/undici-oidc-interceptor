@@ -469,7 +469,8 @@ test('only retries on provided status codes', async (t) => {
     }
   })
 
-  await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
+  const response = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
+  assert.strictEqual(response.statusCode, 403)
 })
 
 test('error handling on creation', async (t) => {
