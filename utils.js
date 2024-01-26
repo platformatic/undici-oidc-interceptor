@@ -2,14 +2,14 @@
 
 const { request } = require('undici')
 
-async function refreshAccessToken (refreshEndpoint, clientId, refreshToken) {
+async function refreshAccessToken ({ refreshEndpoint, refreshToken, clientId }) {
   const { statusCode, body } = await request(`${refreshEndpoint}/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      token: refreshToken,
+      refresh_token: refreshToken,
       grant_type: 'refresh_token',
       client_id: clientId
     })
