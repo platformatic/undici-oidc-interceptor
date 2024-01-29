@@ -26,10 +26,10 @@ function getTokenState (token) {
 }
 
 let _requestingRefresh
-function callRefreshToken (refreshHost, refreshToken, clientId) {
+function callRefreshToken (refreshEndpoint, refreshToken, clientId) {
   if (_requestingRefresh) return _requestingRefresh
 
-  _requestingRefresh = refreshAccessToken(refreshHost, refreshToken, clientId)
+  _requestingRefresh = refreshAccessToken({ refreshEndpoint, refreshToken, clientId })
   _requestingRefresh.catch(() => _requestingRefresh = null)
   _requestingRefresh.then((result) => {
     _requestingRefresh = null

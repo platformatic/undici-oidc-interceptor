@@ -542,8 +542,9 @@ test('optimistic refresh', async (t) => {
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
-      const { grant_type } = JSON.parse(body)
+      const { grant_type, refresh_token } = JSON.parse(body)
       assert.strictEqual(grant_type, 'refresh_token')
+      assert.ok(refresh_token)
     })
 
     accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
