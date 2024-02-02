@@ -1,7 +1,7 @@
 'use strict'
 
 const { createDecoder } = require('fast-jwt')
-const { refreshAccessToken } = require('./utils')
+const { refreshAccessToken } = require('./lib/utils')
 const { RetryHandler } = require('undici')
 
 const decode = createDecoder()
@@ -19,24 +19,9 @@ function getTokenState (token) {
 
   const { exp } = decode(token)
 
-  if (!exp) return TOKEN_STATE.EXPIRED
   if (exp <= (Date.now() + EXP_DIFF_MS) / 1000) return TOKEN_STATE.EXPIRED
   if (exp <= (Date.now() + NEAR_EXP_DIFF_MS) / 1000) return TOKEN_STATE.NEAR_EXPIRATION
   return TOKEN_STATE.VALID
-}
-
-let _requestingRefresh
-function callRefreshToken (refreshEndpoint, refreshToken, clientId) {
-  if (_requestingRefresh) return _requestingRefresh
-
-  _requestingRefresh = refreshAccessToken({ refreshEndpoint, refreshToken, clientId })
-  _requestingRefresh.catch(() => _requestingRefresh = null)
-  _requestingRefresh.then((result) => {
-    _requestingRefresh = null
-    return result
-  })
-
-  return _requestingRefresh
 }
 
 function createOAuthInterceptor (options) {
@@ -64,6 +49,16 @@ function createOAuthInterceptor (options) {
   const refreshHost = iss
   const client = clientId || sub
 
+  let _requestingRefresh
+  function callRefreshToken (refreshEndpoint, refreshToken, clientId) {
+    if (_requestingRefresh) return _requestingRefresh
+
+    _requestingRefresh = refreshAccessToken({ refreshEndpoint, refreshToken, clientId })
+      .finally(() => _requestingRefresh = null)
+
+    return _requestingRefresh
+  }
+
   return dispatch => {
     return function Intercept (opts, handler) {
       if (!opts.oauthRetry && (origins.length > 0 && !origins.includes(opts.origin))) {
@@ -73,6 +68,9 @@ function createOAuthInterceptor (options) {
 
       if (opts.oauthRetry) {
         return callRefreshToken(refreshHost, refreshToken, client)
+          .catch(err => {
+            handler.onError(err)
+          })
           .then(newAccessToken => {
             accessToken = newAccessToken
 
@@ -111,6 +109,7 @@ function createOAuthInterceptor (options) {
           ...opts.headers,
           authorization: `Bearer ${accessToken}`
         }
+        dispatcher.emit('oauth:token-refreshed', newAccessToken)
         return dispatch(opts, retryHandler)
       }
 
@@ -118,11 +117,14 @@ function createOAuthInterceptor (options) {
         case TOKEN_STATE.EXPIRED:
           return callRefreshToken(refreshHost, refreshToken, client)
             .then(saveTokenAndRetry)
-            .catch(err => handler.onError(err))
+            .catch(err => {
+              handler.onError(err)
+            })
         case TOKEN_STATE.NEAR_EXPIRATION:
           callRefreshToken(refreshHost, refreshToken, client)
             .then(newAccessToken => {
               accessToken = newAccessToken
+              dispatcher.emit('oauth:token-refreshed', newAccessToken)
             })
             .catch(/* do nothing */)
         default:
@@ -132,4 +134,4 @@ function createOAuthInterceptor (options) {
   }
 }
 
-module.exports = { createOAuthInterceptor }
+module.exports.createOAuthInterceptor = createOAuthInterceptor

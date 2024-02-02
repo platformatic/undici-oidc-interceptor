@@ -6,7 +6,7 @@ const http = require('node:http')
 const { once, EventEmitter } = require('node:events')
 const { request, Agent } = require('undici')
 const { createDecoder } = require('fast-jwt')
-const { createOAuthInterceptor } = require('../oauth-interceptor')
+const { createOAuthInterceptor } = require('../')
 const { createToken } = require('./helper')
 
 test('attach provided access token to the request', async (t) => {
@@ -125,12 +125,12 @@ test('refresh access token if expired', async (t) => {
 })
 
 test('refresh token within refresh window', async (t) => {
-  const ee = new EventEmitter()
-  let accessToken = createToken({ name: 'access' }, { expiresIn: '29s' })
+  const oldAccessToken = createToken({ name: 'access' }, { expiresIn: '29s' })
+  const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
 
   const mainServer = http.createServer((req, res) => {
     assert.ok(req.headers.authorization.length > 'Bearer '.length)
-    assert.notStrictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    assert.strictEqual(req.headers.authorization, `Bearer ${oldAccessToken}`)
     res.writeHead(200)
     res.end()
   })
@@ -147,10 +147,8 @@ test('refresh token within refresh window', async (t) => {
       assert.strictEqual(grant_type, 'refresh_token')
     })
 
-    accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
     res.writeHead(200)
-    res.end(JSON.stringify({ access_token: accessToken }))
-    ee.emit('token-refreshed')
+    res.end(JSON.stringify({ access_token: newAccessToken }))
   })
   tokenServer.listen(0)
 
@@ -167,14 +165,14 @@ test('refresh token within refresh window', async (t) => {
   const dispatcher = new Agent({
     interceptors: {
       Pool: [createOAuthInterceptor({
-        accessToken,
+        accessToken: oldAccessToken,
         refreshToken,
         retryOnStatusCodes: [401]
       })]
     }
   })
 
-  const tokenRefreshed = once(ee, 'token-refreshed')
+  const tokenRefreshed = once(dispatcher, 'oauth:token-refreshed')
 
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
@@ -516,18 +514,18 @@ test('error handling on creation', async (t) => {
  * make second request which uses new token
  */
 test('optimistic refresh', async (t) => {
-  const ee = new EventEmitter()
-  let accessToken = createToken({ name: 'access' }, { expiresIn: '29s' })
+  const oldAccessToken = createToken({ name: 'access' }, { expiresIn: '29s' })
+  const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
 
   let requestCount = 0
   const mainServer = http.createServer((req, res) => {
     requestCount += 1
     if (requestCount === 1) {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
-      assert.notStrictEqual(req.headers.authorization, `Bearer ${accessToken}`, 'token should not be the same on first request')
+      assert.strictEqual(req.headers.authorization, `Bearer ${oldAccessToken}`, 'token should be the old one in first request')
     } else {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
-      assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`, 'token should be the same on second request')
+      assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
     }
 
     res.writeHead(200)
@@ -547,10 +545,8 @@ test('optimistic refresh', async (t) => {
       assert.ok(refresh_token)
     })
 
-    accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
     res.writeHead(200)
-    res.end(JSON.stringify({ access_token: accessToken }))
-    ee.emit('token-refreshed')
+    res.end(JSON.stringify({ access_token: newAccessToken }))
   })
   tokenServer.listen(0)
 
@@ -567,14 +563,14 @@ test('optimistic refresh', async (t) => {
   const dispatcher = new Agent({
     interceptors: {
       Pool: [createOAuthInterceptor({
-        accessToken,
+        accessToken: oldAccessToken,
         refreshToken,
         retryOnStatusCodes: [401]
       })]
     }
   })
 
-  const tokenRefreshed = once(ee, 'token-refreshed')
+  const tokenRefreshed = once(dispatcher, 'oauth:token-refreshed')
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -589,4 +585,33 @@ test('optimistic refresh', async (t) => {
   }
 
   assert.strictEqual(requestCount, 2)
+})
+
+test('do not intercept if not in the origins', async (t) => {
+  const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d', iss: 'doesntmatter.com', sub: 'client-id' }
+  )
+
+  const server = http.createServer((req, res) => {
+    assert.strictEqual(req.headers.authorization, undefined)
+    res.writeHead(200)
+    res.end()
+  })
+  server.listen(0)
+
+  t.after(() => server.close())
+
+  const origin = `http://localhost:${server.address().port}`
+
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOAuthInterceptor({ accessToken, refreshToken, origins: [origin] })]
+    }
+  })
+
+  // we use a different origin
+  const { statusCode } = await request(`http://127.0.0.1:${server.address().port}`, { dispatcher })
+  assert.strictEqual(statusCode, 200)
 })
