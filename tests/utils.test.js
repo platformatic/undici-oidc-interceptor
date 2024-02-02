@@ -3,7 +3,7 @@
 const { test } = require('node:test')
 const assert = require('node:assert')
 const { setGlobalDispatcher, MockAgent } = require('undici')
-const { refreshAccessToken } = require('../utils')
+const { refreshAccessToken } = require('../lib/utils')
 
 const mockAgent = new MockAgent()
 setGlobalDispatcher(mockAgent)
