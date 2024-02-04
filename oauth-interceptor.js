@@ -2,7 +2,7 @@
 
 const { createDecoder } = require('fast-jwt')
 const { refreshAccessToken } = require('./lib/utils')
-const { RetryHandler } = require('undici')
+const { RetryHandler, getGlobalDispatcher } = require('undici')
 
 const decode = createDecoder()
 const EXP_DIFF_MS = 10 * 1000
@@ -84,7 +84,7 @@ function createOAuthInterceptor (options) {
         opts.headers.authorization = `Bearer ${accessToken}`
       }
 
-      const { dispatcher } = opts
+      const dispatcher = opts.dispatcher || getGlobalDispatcher()
 
       const retryHandler = new RetryHandler({
         ...opts,
