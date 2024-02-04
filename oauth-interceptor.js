@@ -134,4 +134,5 @@ function createOAuthInterceptor (options) {
   }
 }
 
+module.exports = createOAuthInterceptor
 module.exports.createOAuthInterceptor = createOAuthInterceptor
