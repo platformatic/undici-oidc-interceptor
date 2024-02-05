@@ -1,5 +1,7 @@
 # undici-oauth-interceptor
 
+[![NPM version](https://img.shields.io/npm/v/undici-oauth-interceptor.svg?style=flat)](https://www.npmjs.com/package/undici-oauth-interceptor)
+
 Manages an access token and automatically sets the `Authorization` header on any
 request that is going to a limited set of domains.
 
