@@ -25,13 +25,15 @@ test('attach provided access token to the request', async (t) => {
 
   t.after(() => server.close())
 
+  const origin = `http://localhost:${server.address().port}`
+
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({ accessToken, refreshToken })]
+      Pool: [createOAuthInterceptor({ accessToken, refreshToken, origins: [origin] })]
     }
   })
 
-  const { statusCode } = await request(`http://localhost:${server.address().port}`, { dispatcher })
+  const { statusCode } = await request(origin, { dispatcher })
   assert.strictEqual(statusCode, 200)
 })
 
@@ -70,7 +72,8 @@ test('get an access token if no token provided', async (t) => {
       Pool: [createOAuthInterceptor({
         refreshToken,
         retryOnStatusCodes: [401],
-        clientId: 'client-id'
+        clientId: 'client-id',
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -115,7 +118,8 @@ test('refresh access token if expired', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -167,7 +171,8 @@ test('refresh token within refresh window', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken: oldAccessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -211,7 +216,8 @@ test('do not refresh just outside of refresh window', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -266,7 +272,8 @@ test('refresh access token if server rejects, retry request', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -312,7 +319,8 @@ test('do not intercept request', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        interceptDomains: ['example.com']
+        interceptDomains: ['example.com'],
+        origins: [`localhost:${server.address().port}`]
       })]
     }
   })
@@ -353,7 +361,7 @@ test('request is intercepted', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        interceptDomains: [`localhost:${server.address().port}`]
+        origins: [`localhost:${server.address().port}`]
       })]
     }
   })
@@ -400,7 +408,7 @@ test('token created only once', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({ refreshToken })]
+      Pool: [createOAuthInterceptor({ refreshToken, origins: [`http://localhost:${mainServer.address().port}`] })]
     }
   })
 
@@ -565,7 +573,8 @@ test('optimistic refresh', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken: oldAccessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })

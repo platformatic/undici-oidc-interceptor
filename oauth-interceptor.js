@@ -25,24 +25,22 @@ function getTokenState (token) {
 }
 
 function createOAuthInterceptor (options) {
-  let { accessToken } = { ...options }
-  const {
-    refreshToken,
+  const { refreshToken, clientId } = options
+  let {
+    accessToken ,
     retryOnStatusCodes,
-    origins,
-    clientId
-  } = {
-    retryOnStatusCodes: [401],
-    origins: [],
-    refreshToken: '',
-    ...options
-  }
+    origins
+  } = options
+
+  retryOnStatusCodes = retryOnStatusCodes || [401]
+  origins = origins || []
 
   if (!refreshToken) {
     throw new Error('refreshToken is required')
   }
 
-  const { iss, sub } = decode(refreshToken)
+  const decoded = decode(refreshToken)
+  const { iss, sub } = decoded
   if (!iss) throw new Error('refreshToken is invalid: iss is required')
   if (!sub && !clientId) throw new Error('No clientId provided')
 
@@ -61,7 +59,7 @@ function createOAuthInterceptor (options) {
 
   return dispatch => {
     return function Intercept (opts, handler) {
-      if (!opts.oauthRetry && (origins.length > 0 && !origins.includes(opts.origin))) {
+      if (!opts.oauthRetry && !origins.includes(opts.origin)) {
         // do not attempt intercept
         return dispatch(opts, handler)
       }

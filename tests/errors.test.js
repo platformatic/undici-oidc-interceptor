@@ -41,7 +41,8 @@ test('error when refreshing', async (t) => {
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -81,7 +82,8 @@ test('after service rejects the token, token service reject token, error request
       Pool: [createOAuthInterceptor({
         accessToken,
         refreshToken,
-        retryOnStatusCodes: [401]
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
