@@ -41,8 +41,6 @@ test('interceptor works with oidc-provider', async (t) => {
         clientId: 'foo',
         clientSecret: 'bar',
         idpTokenUrl,
-        // contentType: 'application/x-www-form-urlencoded',
-        contentType: 'form-urlencoded',
         origins: [origin]
       })]
     }

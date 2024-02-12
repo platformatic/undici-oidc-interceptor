@@ -15,7 +15,7 @@ test('refreshAccessToken() - success', async (t) => {
     method: 'POST',
     path: '/token',
     body: body => {
-      const { refresh_token, grant_type, client_id } = JSON.parse(body)
+      const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
       assert.strictEqual(refresh_token, 'refresh-token')
       assert.strictEqual(grant_type, 'refresh_token')
       assert.strictEqual(client_id, 'client-id')
@@ -29,6 +29,31 @@ test('refreshAccessToken() - success', async (t) => {
     idpTokenUrl: 'https://example.com/token',
     clientId: 'client-id',
     refreshToken: 'refresh-token'
+  })
+  assert.strictEqual(accessToken, 'new-access-token')
+})
+
+test('refreshAccessToken() - success / json', async (t) => {
+  const refreshMock = mockAgent.get('https://example.com')
+  refreshMock.intercept({
+    method: 'POST',
+    path: '/token',
+    body: body => {
+      const { refresh_token, grant_type, client_id } = JSON.parse(body)
+      assert.strictEqual(refresh_token, 'refresh-token')
+      assert.strictEqual(grant_type, 'refresh_token')
+      assert.strictEqual(client_id, 'client-id')
+      return true
+    }
+  }).reply(200, {
+    access_token: 'new-access-token'
+  })
+
+  const accessToken = await refreshAccessToken({
+    idpTokenUrl: 'https://example.com/token',
+    clientId: 'client-id',
+    refreshToken: 'refresh-token',
+    contentType: 'json'
   })
   assert.strictEqual(accessToken, 'new-access-token')
 })

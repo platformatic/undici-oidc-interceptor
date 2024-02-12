@@ -147,7 +147,7 @@ test('refresh token within refresh window', async (t) => {
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
-      const { grant_type } = JSON.parse(body)
+      const { grant_type } = Object.fromEntries(new URLSearchParams(body))
       assert.strictEqual(grant_type, 'refresh_token')
     })
 
@@ -548,7 +548,7 @@ test('optimistic refresh', async (t) => {
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
-      const { grant_type, refresh_token } = JSON.parse(body)
+      const { grant_type, refresh_token } = Object.fromEntries(new URLSearchParams(body))
       assert.strictEqual(grant_type, 'refresh_token')
       assert.ok(refresh_token)
     })
