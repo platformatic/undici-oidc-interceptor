@@ -1,5 +1,8 @@
 # undici-oidc-interceptor
 
+
+[![NPM version](https://img.shields.io/npm/v/undici-oidc-interceptor.svg?style=flat)](https://www.npmjs.com/package/undici-oidc-interceptor)
+
 `undici-oidc-interceptor` manages an [OIDC](https://openid.net/specs/openid-connect-core-1_0.html) access token and transparently sets the `Authorization` header on any
 request that is going to a limited set of domains.
 
