@@ -47,7 +47,7 @@ test('get an access token if no token provided', async (t) => {
       Pool: [createOAuthInterceptor({
         refreshToken,
         retryOnStatusCodes: [401],
-        origins: [`http://localhost:${mainServer.address().port}`]
+        origins: [`http://localhost:${mainServer.address().port}`],
         clientId: 'client-id'
       })]
     }

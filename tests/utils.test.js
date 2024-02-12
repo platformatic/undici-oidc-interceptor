@@ -26,7 +26,7 @@ test('refreshAccessToken() - success', async (t) => {
   })
 
   const accessToken = await refreshAccessToken({
-    refreshEndpoint: 'https://example.com',
+    idpTokenUrl: 'https://example.com/token',
     clientId: 'client-id',
     refreshToken: 'refresh-token'
   })

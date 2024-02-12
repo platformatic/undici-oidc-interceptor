@@ -500,7 +500,7 @@ test('error handling on creation', async (t) => {
           Pool: [createOAuthInterceptor({ refreshToken: '' })]
         }
       })
-    }, { message: 'refreshToken is required' })
+    }, { message: 'Either the idpTokenUrl or refreshToken must be provided' })
   }
 
   {
