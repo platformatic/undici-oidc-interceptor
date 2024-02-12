@@ -6,7 +6,7 @@ const http = require('node:http')
 const { once, EventEmitter } = require('node:events')
 const { request, Agent } = require('undici')
 const { createDecoder } = require('fast-jwt')
-const { createOAuthInterceptor } = require('../')
+const { createOidcInterceptor } = require('../')
 const { createToken } = require('./helper')
 
 test('error when refreshing', async (t) => {
@@ -38,7 +38,7 @@ test('error when refreshing', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
@@ -79,7 +79,7 @@ test('after service rejects the token, token service reject token, error request
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],

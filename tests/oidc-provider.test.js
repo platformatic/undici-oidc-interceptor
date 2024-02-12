@@ -7,7 +7,7 @@ const { request, Agent } = require('undici')
 const { createDecoder, createVerifier } = require('fast-jwt')
 const buildGetJwks = require('get-jwks')
 const { testProvider } = require('./helper.js')
-const { createOAuthInterceptor } = require('../')
+const { createOidcInterceptor } = require('../')
 
 test('interceptor works with oidc-provider', async (t) => {
   const jwks = buildGetJwks({
@@ -37,7 +37,7 @@ test('interceptor works with oidc-provider', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({ 
+      Pool: [createOidcInterceptor({ 
         clientId: 'foo',
         clientSecret: 'bar',
         idpTokenUrl,

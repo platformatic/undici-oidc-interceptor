@@ -24,7 +24,7 @@ function getTokenState (token) {
   return TOKEN_STATE.VALID
 }
 
-function createOAuthInterceptor (options) {
+function createOidcInterceptor (options) {
   const { refreshToken, clientSecret, contentType } = options
   let {
     accessToken,
@@ -138,5 +138,5 @@ function createOAuthInterceptor (options) {
   }
 }
 
-module.exports = createOAuthInterceptor
-module.exports.createOAuthInterceptor = createOAuthInterceptor
+module.exports = createOidcInterceptor
+module.exports.createOidcInterceptor = createOidcInterceptor

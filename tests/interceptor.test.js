@@ -6,7 +6,7 @@ const http = require('node:http')
 const { once, EventEmitter } = require('node:events')
 const { request, Agent } = require('undici')
 const { createDecoder } = require('fast-jwt')
-const { createOAuthInterceptor } = require('../')
+const { createOidcInterceptor } = require('../')
 const { createToken } = require('./helper')
 
 test('attach provided access token to the request', async (t) => {
@@ -29,7 +29,7 @@ test('attach provided access token to the request', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({ accessToken, refreshToken, origins: [origin] })]
+      Pool: [createOidcInterceptor({ accessToken, refreshToken, origins: [origin] })]
     }
   })
 
@@ -69,7 +69,7 @@ test('get an access token if no token provided', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         refreshToken,
         retryOnStatusCodes: [401],
         clientId: 'client-id',
@@ -115,7 +115,7 @@ test('refresh access token if expired', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
@@ -168,7 +168,7 @@ test('refresh token within refresh window', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken: oldAccessToken,
         refreshToken,
         retryOnStatusCodes: [401],
@@ -213,7 +213,7 @@ test('do not refresh just outside of refresh window', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
@@ -269,7 +269,7 @@ test('refresh access token if server rejects, retry request', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
@@ -316,7 +316,7 @@ test('do not intercept request', async (t) => {
   )
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         interceptDomains: ['example.com'],
@@ -358,7 +358,7 @@ test('request is intercepted', async (t) => {
   )
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         origins: [`localhost:${server.address().port}`]
@@ -408,7 +408,7 @@ test('token created only once', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({ refreshToken, origins: [`http://localhost:${mainServer.address().port}`] })]
+      Pool: [createOidcInterceptor({ refreshToken, origins: [`http://localhost:${mainServer.address().port}`] })]
     }
   })
 
@@ -467,7 +467,7 @@ test('only retries on provided status codes', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401] // will not retry because server is returning 403
@@ -487,7 +487,7 @@ test('error handling on creation', async (t) => {
     assert.throws(() => {
       new Agent({
         interceptors: {
-          Pool: [createOAuthInterceptor({ refreshToken })]
+          Pool: [createOidcInterceptor({ refreshToken })]
         }
       })
     }, { message: 'refreshToken is invalid: iss is required' })
@@ -497,7 +497,7 @@ test('error handling on creation', async (t) => {
     assert.throws(() => {
       new Agent({
         interceptors: {
-          Pool: [createOAuthInterceptor({ refreshToken: '' })]
+          Pool: [createOidcInterceptor({ refreshToken: '' })]
         }
       })
     }, { message: 'Either the idpTokenUrl or refreshToken must be provided' })
@@ -509,7 +509,7 @@ test('error handling on creation', async (t) => {
     assert.throws(() => {
       new Agent({
         interceptors: {
-          Pool: [createOAuthInterceptor({ refreshToken })]
+          Pool: [createOidcInterceptor({ refreshToken })]
         }
       })
     }, { message: 'No clientId provided' })
@@ -570,7 +570,7 @@ test('optimistic refresh', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({
+      Pool: [createOidcInterceptor({
         accessToken: oldAccessToken,
         refreshToken,
         retryOnStatusCodes: [401],
@@ -616,7 +616,7 @@ test('do not intercept if not in the origins', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOAuthInterceptor({ accessToken, refreshToken, origins: [origin] })]
+      Pool: [createOidcInterceptor({ accessToken, refreshToken, origins: [origin] })]
     }
   })
 
