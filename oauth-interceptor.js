@@ -25,33 +25,39 @@ function getTokenState (token) {
 }
 
 function createOAuthInterceptor (options) {
-  const { refreshToken, clientId } = options
+  const { refreshToken, clientSecret, contentType } = options
   let {
-    accessToken ,
+    accessToken,
     retryOnStatusCodes,
-    origins
+    idpTokenUrl,
+    origins,
+    clientId,
   } = options
 
   retryOnStatusCodes = retryOnStatusCodes || [401]
   origins = origins || []
 
-  if (!refreshToken) {
-    throw new Error('refreshToken is required')
+  if (refreshToken) {
+    const decoded = decode(refreshToken)
+    const { iss, sub } = decoded
+
+    if (!iss) throw new Error('refreshToken is invalid: iss is required')
+
+    idpTokenUrl = idpTokenUrl || `${iss}/token`
+    clientId = clientId || sub
   }
 
-  const decoded = decode(refreshToken)
-  const { iss, sub } = decoded
-  if (!iss) throw new Error('refreshToken is invalid: iss is required')
-  if (!sub && !clientId) throw new Error('No clientId provided')
+  if (!idpTokenUrl) {
+    throw new Error('Either the idpTokenUrl or refreshToken must be provided')
+  }
 
-  const refreshHost = iss
-  const client = clientId || sub
+  if (!clientId) throw new Error('No clientId provided')
 
   let _requestingRefresh
-  function callRefreshToken (refreshEndpoint, refreshToken, clientId) {
+  function callRefreshToken () {
     if (_requestingRefresh) return _requestingRefresh
 
-    _requestingRefresh = refreshAccessToken({ refreshEndpoint, refreshToken, clientId })
+    _requestingRefresh = refreshAccessToken({ idpTokenUrl, refreshToken, clientId, clientSecret, contentType })
       .finally(() => _requestingRefresh = null)
 
     return _requestingRefresh
@@ -65,7 +71,7 @@ function createOAuthInterceptor (options) {
       }
 
       if (opts.oauthRetry) {
-        return callRefreshToken(refreshHost, refreshToken, client)
+        return callRefreshToken()
           .catch(err => {
             handler.onError(err)
           })
@@ -113,13 +119,13 @@ function createOAuthInterceptor (options) {
 
       switch (getTokenState(accessToken)) {
         case TOKEN_STATE.EXPIRED:
-          return callRefreshToken(refreshHost, refreshToken, client)
+          return callRefreshToken()
             .then(saveTokenAndRetry)
             .catch(err => {
               handler.onError(err)
             })
         case TOKEN_STATE.NEAR_EXPIRATION:
-          callRefreshToken(refreshHost, refreshToken, client)
+          callRefreshToken()
             .then(newAccessToken => {
               accessToken = newAccessToken
               dispatcher.emit('oauth:token-refreshed', newAccessToken)
