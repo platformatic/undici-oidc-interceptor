@@ -17,12 +17,12 @@ test('interceptor works with oidc-provider', async (t) => {
   const idp = `http://localhost:${provider.address().port}/`
   const idpTokenUrl = `${idp}token`
 
-  const key = await jwks.getPublicKey({ domain: idp, kid: 'r1LkbBo3925Rb2ZFFrKyU3MVex9T2817Kx0vbi6i_Kc' })
+  const getKey = ({ header }) => jwks.getPublicKey({ domain: idp, kid: header.kid, alg: header.alg })
 
-  const mainServer = http.createServer((req, res) => {
+  const mainServer = http.createServer(async (req, res) => {
     assert.ok(req.headers.authorization.length > 'Bearer '.length)
-    const verifySync = createVerifier({ key })
-    const decoded = verifySync(req.headers.authorization.slice('Bearer '.length))
+    const verifyAsync = createVerifier({ key: getKey })
+    const decoded = await verifyAsync(req.headers.authorization.slice('Bearer '.length))
     assert.strictEqual(decoded.iss, `http://localhost:${provider.address().port}`)
     res.writeHead(200)
     res.end()
