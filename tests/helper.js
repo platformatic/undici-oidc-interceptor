@@ -12,7 +12,7 @@ function createToken (payload, opts = {}) {
   return signSync(payload)
 }
 
-class MemoryAdapter {
+class MemoryAdapter {}
   constructor(model) {
     this.model = model;
     this.storage = new Map();
