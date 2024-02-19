@@ -1,8 +1,8 @@
 'use strict'
 
 const { createDecoder } = require('fast-jwt')
-const { refreshAccessToken } = require('./utils')
-const { RetryHandler } = require('undici')
+const { refreshAccessToken } = require('./lib/utils')
+const { RetryHandler, getGlobalDispatcher } = require('undici')
 
 const decode = createDecoder()
 const EXP_DIFF_MS = 10 * 1000
@@ -19,60 +19,56 @@ function getTokenState (token) {
 
   const { exp } = decode(token)
 
-  if (!exp) return TOKEN_STATE.EXPIRED
   if (exp <= (Date.now() + EXP_DIFF_MS) / 1000) return TOKEN_STATE.EXPIRED
   if (exp <= (Date.now() + NEAR_EXP_DIFF_MS) / 1000) return TOKEN_STATE.NEAR_EXPIRATION
   return TOKEN_STATE.VALID
 }
 
-let _requestingRefresh
-function callRefreshToken (refreshHost, refreshToken, clientId) {
-  if (_requestingRefresh) return _requestingRefresh
-
-  _requestingRefresh = refreshAccessToken(refreshHost, refreshToken, clientId)
-  _requestingRefresh.catch(() => _requestingRefresh = null)
-  _requestingRefresh.then((result) => {
-    _requestingRefresh = null
-    return result
-  })
-
-  return _requestingRefresh
-}
-
 function createOAuthInterceptor (options) {
-  let { accessToken } = { ...options }
-  const {
-    refreshToken,
+  const { refreshToken, clientId } = options
+  let {
+    accessToken ,
     retryOnStatusCodes,
-    origins,
-    clientId
-  } = {
-    retryOnStatusCodes: [401],
-    origins: [],
-    refreshToken: '',
-    ...options
-  }
+    origins
+  } = options
+
+  retryOnStatusCodes = retryOnStatusCodes || [401]
+  origins = origins || []
 
   if (!refreshToken) {
     throw new Error('refreshToken is required')
   }
 
-  const { iss, sub } = decode(refreshToken)
+  const decoded = decode(refreshToken)
+  const { iss, sub } = decoded
   if (!iss) throw new Error('refreshToken is invalid: iss is required')
   if (!sub && !clientId) throw new Error('No clientId provided')
 
   const refreshHost = iss
   const client = clientId || sub
 
+  let _requestingRefresh
+  function callRefreshToken (refreshEndpoint, refreshToken, clientId) {
+    if (_requestingRefresh) return _requestingRefresh
+
+    _requestingRefresh = refreshAccessToken({ refreshEndpoint, refreshToken, clientId })
+      .finally(() => _requestingRefresh = null)
+
+    return _requestingRefresh
+  }
+
   return dispatch => {
     return function Intercept (opts, handler) {
-      if (!opts.oauthRetry && (origins.length > 0 && !origins.includes(opts.origin))) {
+      if (!opts.oauthRetry && !origins.includes(opts.origin)) {
         // do not attempt intercept
         return dispatch(opts, handler)
       }
 
       if (opts.oauthRetry) {
         return callRefreshToken(refreshHost, refreshToken, client)
+          .catch(err => {
+            handler.onError(err)
+          })
           .then(newAccessToken => {
             accessToken = newAccessToken
 
@@ -86,7 +82,7 @@ function createOAuthInterceptor (options) {
         opts.headers.authorization = `Bearer ${accessToken}`
       }
 
-      const { dispatcher } = opts
+      const dispatcher = opts.dispatcher || getGlobalDispatcher()
 
       const retryHandler = new RetryHandler({
         ...opts,
@@ -111,6 +107,7 @@ function createOAuthInterceptor (options) {
           ...opts.headers,
           authorization: `Bearer ${accessToken}`
         }
+        dispatcher.emit('oauth:token-refreshed', newAccessToken)
         return dispatch(opts, retryHandler)
       }
 
@@ -118,11 +115,14 @@ function createOAuthInterceptor (options) {
         case TOKEN_STATE.EXPIRED:
           return callRefreshToken(refreshHost, refreshToken, client)
             .then(saveTokenAndRetry)
-            .catch(err => handler.onError(err))
+            .catch(err => {
+              handler.onError(err)
+            })
         case TOKEN_STATE.NEAR_EXPIRATION:
           callRefreshToken(refreshHost, refreshToken, client)
             .then(newAccessToken => {
               accessToken = newAccessToken
+              dispatcher.emit('oauth:token-refreshed', newAccessToken)
             })
             .catch(/* do nothing */)
         default:
@@ -132,4 +132,5 @@ function createOAuthInterceptor (options) {
   }
 }
 
-module.exports = { createOAuthInterceptor }
+module.exports = createOAuthInterceptor
+module.exports.createOAuthInterceptor = createOAuthInterceptor
