@@ -24,35 +24,45 @@ function getTokenState (token) {
   return TOKEN_STATE.VALID
 }
 
-function createOAuthInterceptor (options) {
-  const { refreshToken, clientId } = options
+function createOidcInterceptor (options) {
+  const { refreshToken, clientSecret, contentType } = options
   let {
-    accessToken ,
+    accessToken,
     retryOnStatusCodes,
-    origins
+    idpTokenUrl,
+    origins,
+    clientId,
+    scope,
+    resource,
+    audience
   } = options
 
   retryOnStatusCodes = retryOnStatusCodes || [401]
   origins = origins || []
 
-  if (!refreshToken) {
-    throw new Error('refreshToken is required')
+  // TODO: if there is a refresh_token, we might not need the idpTokenUrl and use the standard
+  // discovery mechanism. See
+  // https://github.com/panva/oauth4webapi/blob/8173ba2944ede8beff11e59019940bbd6440ea96/src/index.ts#L1054-L1093
+  if (!idpTokenUrl) {
+    throw new Error('No idpTokenUrl provided')
   }
 
-  const decoded = decode(refreshToken)
-  const { iss, sub } = decoded
-  if (!iss) throw new Error('refreshToken is invalid: iss is required')
-  if (!sub && !clientId) throw new Error('No clientId provided')
-
-  const refreshHost = iss
-  const client = clientId || sub
+  if (!clientId) throw new Error('No clientId provided')
 
   let _requestingRefresh
-  function callRefreshToken (refreshEndpoint, refreshToken, clientId) {
+  function callRefreshToken () {
     if (_requestingRefresh) return _requestingRefresh
 
-    _requestingRefresh = refreshAccessToken({ refreshEndpoint, refreshToken, clientId })
-      .finally(() => _requestingRefresh = null)
+    _requestingRefresh = refreshAccessToken({
+      idpTokenUrl,
+      refreshToken,
+      clientId,
+      clientSecret,
+      contentType,
+      scope,
+      resource,
+      audience
+    }).finally(() => _requestingRefresh = null)
 
     return _requestingRefresh
   }
@@ -65,7 +75,7 @@ function createOAuthInterceptor (options) {
       }
 
       if (opts.oauthRetry) {
-        return callRefreshToken(refreshHost, refreshToken, client)
+        return callRefreshToken()
           .catch(err => {
             handler.onError(err)
           })
@@ -113,13 +123,13 @@ function createOAuthInterceptor (options) {
 
       switch (getTokenState(accessToken)) {
         case TOKEN_STATE.EXPIRED:
-          return callRefreshToken(refreshHost, refreshToken, client)
+          return callRefreshToken()
             .then(saveTokenAndRetry)
             .catch(err => {
               handler.onError(err)
             })
         case TOKEN_STATE.NEAR_EXPIRATION:
-          callRefreshToken(refreshHost, refreshToken, client)
+          callRefreshToken()
             .then(newAccessToken => {
               accessToken = newAccessToken
               dispatcher.emit('oauth:token-refreshed', newAccessToken)
@@ -132,5 +142,5 @@ function createOAuthInterceptor (options) {
   }
 }
 
-module.exports = createOAuthInterceptor
-module.exports.createOAuthInterceptor = createOAuthInterceptor
+module.exports = createOidcInterceptor
+module.exports.createOidcInterceptor = createOidcInterceptor

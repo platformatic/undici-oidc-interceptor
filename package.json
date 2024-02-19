@@ -1,8 +1,8 @@
 {
-  "name": "undici-oauth-interceptor",
+  "name": "undici-oidc-interceptor",
   "version": "0.4.2",
-  "description": "Automatically manage OAuth 2.0 access tokens for Undici requests",
-  "main": "oauth-interceptor.js",
+  "description": "Automatically manage OIDC access tokens for Undici requests",
+  "main": "oidc-interceptor.js",
   "scripts": {
     "lint": "standard",
     "test": "borp --coverage"
@@ -14,8 +14,13 @@
     "undici": "^6.0.0"
   },
   "devDependencies": {
+    "@matteo.collina/tspl": "^0.1.1",
     "borp": "^0.9.1",
+    "fast-querystring": "^1.1.2",
     "fastify": "^4.24.3",
+    "get-jwks": "^9.0.1",
+    "jwks": "^1.0.0",
+    "oidc-provider": "^8.4.5",
     "standard": "^17.1.0"
   }
 }
