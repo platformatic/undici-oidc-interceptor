@@ -32,6 +32,9 @@ function createOidcInterceptor (options) {
     idpTokenUrl,
     origins,
     clientId,
+    scope,
+    resource,
+    audience
   } = options
 
   retryOnStatusCodes = retryOnStatusCodes || [401]
@@ -57,8 +60,16 @@ function createOidcInterceptor (options) {
   function callRefreshToken () {
     if (_requestingRefresh) return _requestingRefresh
 
-    _requestingRefresh = refreshAccessToken({ idpTokenUrl, refreshToken, clientId, clientSecret, contentType })
-      .finally(() => _requestingRefresh = null)
+    _requestingRefresh = refreshAccessToken({
+      idpTokenUrl,
+      refreshToken,
+      clientId,
+      clientSecret,
+      contentType,
+      scope,
+      resource,
+      audience
+    }).finally(() => _requestingRefresh = null)
 
     return _requestingRefresh
   }
