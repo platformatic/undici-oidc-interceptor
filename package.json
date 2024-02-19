@@ -10,11 +10,11 @@
   "author": "Platformatic",
   "license": "MIT",
   "dependencies": {
-    "@matteo.collina/tspl": "^0.1.1",
     "fast-jwt": "^3.3.2",
     "undici": "^6.0.0"
   },
   "devDependencies": {
+    "@matteo.collina/tspl": "^0.1.1",
     "borp": "^0.9.1",
     "fast-querystring": "^1.1.2",
     "fastify": "^4.24.3",
