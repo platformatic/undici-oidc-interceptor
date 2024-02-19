@@ -10,7 +10,7 @@
   "author": "Platformatic",
   "license": "MIT",
   "dependencies": {
-    "fast-jwt": "^3.3.2",
+    "fast-jwt": "^4.0.0",
     "undici": "^6.0.0"
   },
   "devDependencies": {
