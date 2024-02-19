@@ -26,6 +26,7 @@ const dispatcher = new Agent({
       // The paramerts for the cliend_credentials grant of OIDC
       clientId: 'FILLME',
       clientSecret: 'FILLME',
+      idpTokenUrl: 'https://your-idp.com/token',
 
       // Set an array of status codes that the interceptor should refresh and
       // retry the request on
@@ -53,6 +54,8 @@ const dispatcher = new Agent({
       // Provide a refresh token so the interceptor can manage the access token
       // The refresh token must include an issuer (`iss`)
       refreshToken: '',
+      idpTokenUrl: 'https://your-idp.com/token',
+      clientId: 'FILLME',
 
       // Set an array of status codes that the interceptor should refresh and
       // retry the request on
@@ -64,10 +67,6 @@ const dispatcher = new Agent({
 
       // OPTIONAL: an initial access token
       accessToken: ''
-
-      // OPTIONAL: clientId that matches refresh token
-      // Default: the `sub` claim in the refresh token
-      clientId: null
     })]
   }
 })
