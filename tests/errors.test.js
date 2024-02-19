@@ -180,3 +180,46 @@ test('201 status code', async (t) => {
 
   await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
 })
+
+test('wrong token_type', async (t) => {
+  const accessToken = createToken({ name: 'access' }, { expiresIn: '1ms' })
+
+  const mainServer = http.createServer((req, res) => {
+    assert.fail('should not be called')
+  })
+  mainServer.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    assert.strictEqual(req.method, 'POST')
+    assert.strictEqual(req.url, '/token')
+
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken, token_type: 'kaboom' }))
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    mainServer.close()
+    tokenServer.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d' }
+  )
+
+  const dispatcher = new Agent({
+    interceptors: {
+      Pool: [createOidcInterceptor({
+        accessToken,
+        refreshToken,
+        retryOnStatusCodes: [401],
+        origins: [`http://localhost:${mainServer.address().port}`],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id'
+      })]
+    }
+  })
+
+  await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
+})
