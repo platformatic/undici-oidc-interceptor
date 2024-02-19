@@ -40,18 +40,8 @@ function createOidcInterceptor (options) {
   retryOnStatusCodes = retryOnStatusCodes || [401]
   origins = origins || []
 
-  if (refreshToken) {
-    const decoded = decode(refreshToken)
-    const { iss, sub } = decoded
-
-    if (!iss) throw new Error('refreshToken is invalid: iss is required')
-
-    idpTokenUrl = idpTokenUrl || `${iss}/token`
-    clientId = clientId || sub
-  }
-
   if (!idpTokenUrl) {
-    throw new Error('Either the idpTokenUrl or refreshToken must be provided')
+    throw new Error('No idpTokenUrl provided')
   }
 
   if (!clientId) throw new Error('No clientId provided')

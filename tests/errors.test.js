@@ -33,7 +33,7 @@ test('error when refreshing', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -42,7 +42,9 @@ test('error when refreshing', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
-        origins: [`http://localhost:${mainServer.address().port}`]
+        origins: [`http://localhost:${mainServer.address().port}`],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id'
       })]
     }
   })
@@ -74,7 +76,7 @@ test('after service rejects the token, token service reject token, error request
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -83,6 +85,8 @@ test('after service rejects the token, token service reject token, error request
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -114,7 +118,7 @@ test('missing token', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -123,6 +127,8 @@ test('missing token', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -156,7 +162,7 @@ test('201 status code', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -165,6 +171,8 @@ test('201 status code', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }

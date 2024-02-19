@@ -29,7 +29,13 @@ test('attach provided access token to the request', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOidcInterceptor({ accessToken, refreshToken, origins: [origin] })]
+      Pool: [createOidcInterceptor({
+        accessToken,
+        refreshToken,
+        origins: [origin],
+        idpTokenUrl: 'http://doesntmatter.com/token',
+        clientId: 'client-id'
+      })]
     }
   })
 
@@ -64,7 +70,7 @@ test('get an access token if no token provided', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}` }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -73,6 +79,7 @@ test('get an access token if no token provided', async (t) => {
         refreshToken,
         retryOnStatusCodes: [401],
         clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -110,7 +117,7 @@ test('refresh access token if expired', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d', sub: 'client-id' }
   )
 
   const dispatcher = new Agent({
@@ -119,6 +126,8 @@ test('refresh access token if expired', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -163,7 +172,7 @@ test('refresh token within refresh window', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d'}
   )
 
   const dispatcher = new Agent({
@@ -172,6 +181,8 @@ test('refresh token within refresh window', async (t) => {
         accessToken: oldAccessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -208,7 +219,7 @@ test('do not refresh just outside of refresh window', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d'}
   )
 
   const dispatcher = new Agent({
@@ -217,6 +228,8 @@ test('do not refresh just outside of refresh window', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -264,7 +277,7 @@ test('refresh access token if server rejects, retry request', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d'}
   )
 
   const dispatcher = new Agent({
@@ -273,6 +286,8 @@ test('refresh access token if server rejects, retry request', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -312,7 +327,7 @@ test('do not intercept request', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d'}
   )
   const dispatcher = new Agent({
     interceptors: {
@@ -320,6 +335,8 @@ test('do not intercept request', async (t) => {
         accessToken,
         refreshToken,
         interceptDomains: ['example.com'],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+        clientId: 'client-id',
         origins: [`localhost:${server.address().port}`]
       })]
     }
@@ -354,13 +371,15 @@ test('request is intercepted', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
   const dispatcher = new Agent({
     interceptors: {
       Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+        clientId: 'client-id',
         origins: [`localhost:${server.address().port}`]
       })]
     }
@@ -403,12 +422,17 @@ test('token created only once', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOidcInterceptor({ refreshToken, origins: [`http://localhost:${mainServer.address().port}`] })]
+      Pool: [createOidcInterceptor({
+        refreshToken,
+        origins: [`http://localhost:${mainServer.address().port}`],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id' 
+      })]
     }
   })
 
@@ -462,7 +486,7 @@ test('only retries on provided status codes', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -470,6 +494,8 @@ test('only retries on provided status codes', async (t) => {
       Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+        clientId: 'client-id',
         retryOnStatusCodes: [401] // will not retry because server is returning 403
       })]
     }
@@ -480,19 +506,6 @@ test('only retries on provided status codes', async (t) => {
 })
 
 test('error handling on creation', async (t) => {
-
-  {
-    const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d', sub: 'some-client' })
-
-    assert.throws(() => {
-      new Agent({
-        interceptors: {
-          Pool: [createOidcInterceptor({ refreshToken })]
-        }
-      })
-    }, { message: 'refreshToken is invalid: iss is required' })
-  }
-
   {
     assert.throws(() => {
       new Agent({
@@ -500,16 +513,16 @@ test('error handling on creation', async (t) => {
           Pool: [createOidcInterceptor({ refreshToken: '' })]
         }
       })
-    }, { message: 'Either the idpTokenUrl or refreshToken must be provided' })
+    }, { message: 'No idpTokenUrl provided' })
   }
 
   {
-    const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d', iss: 'http://google.com' })
+    const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d' })
 
     assert.throws(() => {
       new Agent({
         interceptors: {
-          Pool: [createOidcInterceptor({ refreshToken })]
+          Pool: [createOidcInterceptor({ refreshToken, idpTokenUrl: 'aa' })]
         }
       })
     }, { message: 'No clientId provided' })
@@ -565,7 +578,7 @@ test('optimistic refresh', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -574,6 +587,8 @@ test('optimistic refresh', async (t) => {
         accessToken: oldAccessToken,
         refreshToken,
         retryOnStatusCodes: [401],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        clientId: 'client-id',
         origins: [`http://localhost:${mainServer.address().port}`]
       })]
     }
@@ -600,7 +615,7 @@ test('do not intercept if not in the origins', async (t) => {
   const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: 'doesntmatter.com', sub: 'client-id' }
+    { expiresIn: '1d' }
   )
 
   const server = http.createServer((req, res) => {
@@ -616,7 +631,13 @@ test('do not intercept if not in the origins', async (t) => {
 
   const dispatcher = new Agent({
     interceptors: {
-      Pool: [createOidcInterceptor({ accessToken, refreshToken, origins: [origin] })]
+      Pool: [createOidcInterceptor({
+        accessToken,
+        refreshToken,
+        origins: [origin],
+        idpTokenUrl: 'http://doesntmatter.com/token',
+        clientId: 'client-id'
+      })]
     }
   })
 

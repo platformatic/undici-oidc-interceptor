@@ -39,7 +39,7 @@ test('get an access token if no token provided', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}` }
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent({
@@ -48,6 +48,7 @@ test('get an access token if no token provided', async (t) => {
         refreshToken,
         retryOnStatusCodes: [401],
         origins: [`http://localhost:${mainServer.address().port}`],
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id'
       })]
     }
