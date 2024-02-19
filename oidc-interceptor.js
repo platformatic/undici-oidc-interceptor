@@ -40,6 +40,9 @@ function createOidcInterceptor (options) {
   retryOnStatusCodes = retryOnStatusCodes || [401]
   origins = origins || []
 
+  // TODO: if there is a refresh_token, we might not need the idpTokenUrl and use the standard
+  // discovery mechanism. See
+  // https://github.com/panva/oauth4webapi/blob/8173ba2944ede8beff11e59019940bbd6440ea96/src/index.ts#L1054-L1093
   if (!idpTokenUrl) {
     throw new Error('No idpTokenUrl provided')
   }
