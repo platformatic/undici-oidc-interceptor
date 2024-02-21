@@ -21,8 +21,8 @@ npm i undici undici-oidc-interceptor
 const { Agent } = require('undici')
 const { createOAuthIntercpetor } = require('undici-oidc-interceptor')
 const dispatcher = new Agent({
-  intercpetors: {
-    Pool: [createOAuthIntercpetor({
+  interceptors: {
+    Pool: [createOidcIntercpetor({
       // The paramerts for the cliend_credentials grant of OIDC
       clientId: 'FILLME',
       clientSecret: 'FILLME',
@@ -34,7 +34,7 @@ const dispatcher = new Agent({
 
       // The origins that this interceptor will add the `Authorization` header
       // automatically
-      origins: ['FILLME']
+      origins: ['FILLME'],
 
       // OPTIONAL: an initial access token
       accessToken: ''
