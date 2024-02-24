@@ -30,7 +30,7 @@ function createOidcInterceptor (options) {
     accessToken,
     retryOnStatusCodes,
     idpTokenUrl,
-    origins,
+    urls,
     clientId,
     scope,
     resource,
@@ -38,7 +38,7 @@ function createOidcInterceptor (options) {
   } = options
 
   retryOnStatusCodes = retryOnStatusCodes || [401]
-  origins = origins || []
+  urls = urls || []
 
   // TODO: if there is a refresh_token, we might not need the idpTokenUrl and use the standard
   // discovery mechanism. See
@@ -69,7 +69,7 @@ function createOidcInterceptor (options) {
 
   return dispatch => {
     return function Intercept (opts, handler) {
-      if (!opts.oauthRetry && !origins.includes(opts.origin)) {
+      if (!opts.oauthRetry && !urls.includes(opts.origin)) {
         // do not attempt intercept
         return dispatch(opts, handler)
       }
