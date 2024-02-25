@@ -47,7 +47,7 @@ test('get an access token if no token provided', async (t) => {
       Pool: [createOidcInterceptor({
         refreshToken,
         retryOnStatusCodes: [401],
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id'
       })]

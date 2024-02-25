@@ -42,7 +42,7 @@ test('error when refreshing', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id'
       })]
@@ -87,7 +87,7 @@ test('after service rejects the token, token service reject token, error request
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -129,7 +129,7 @@ test('missing token', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -173,7 +173,7 @@ test('201 status code', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -214,7 +214,7 @@ test('wrong token_type', async (t) => {
         accessToken,
         refreshToken,
         retryOnStatusCodes: [401],
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id'
       })]

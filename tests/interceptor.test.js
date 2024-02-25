@@ -25,21 +25,21 @@ test('attach provided access token to the request', async (t) => {
 
   t.after(() => server.close())
 
-  const origin = `http://localhost:${server.address().port}`
+  const targetUrl = `http://localhost:${server.address().port}`
 
   const dispatcher = new Agent({
     interceptors: {
       Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
-        origins: [origin],
+        urls: [targetUrl],
         idpTokenUrl: 'http://doesntmatter.com/token',
         clientId: 'client-id'
       })]
     }
   })
 
-  const { statusCode } = await request(origin, { dispatcher })
+  const { statusCode } = await request(targetUrl, { dispatcher })
   assert.strictEqual(statusCode, 200)
 })
 
@@ -80,7 +80,7 @@ test('get an access token if no token provided', async (t) => {
         retryOnStatusCodes: [401],
         clientId: 'client-id',
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -128,7 +128,7 @@ test('refresh access token if expired', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -183,7 +183,7 @@ test('refresh token within refresh window', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -230,7 +230,7 @@ test('do not refresh just outside of refresh window', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -288,7 +288,7 @@ test('refresh access token if server rejects, retry request', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -337,7 +337,7 @@ test('do not intercept request', async (t) => {
         interceptDomains: ['example.com'],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
         clientId: 'client-id',
-        origins: [`localhost:${server.address().port}`]
+        urls: [`localhost:${server.address().port}`]
       })]
     }
   })
@@ -380,7 +380,7 @@ test('request is intercepted', async (t) => {
         refreshToken,
         idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
         clientId: 'client-id',
-        origins: [`localhost:${server.address().port}`]
+        urls: [`localhost:${server.address().port}`]
       })]
     }
   })
@@ -429,7 +429,7 @@ test('token created only once', async (t) => {
     interceptors: {
       Pool: [createOidcInterceptor({
         refreshToken,
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id' 
       })]
@@ -589,7 +589,7 @@ test('optimistic refresh', async (t) => {
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
         clientId: 'client-id',
-        origins: [`http://localhost:${mainServer.address().port}`]
+        urls: [`http://localhost:${mainServer.address().port}`]
       })]
     }
   })
@@ -611,7 +611,7 @@ test('optimistic refresh', async (t) => {
   assert.strictEqual(requestCount, 2)
 })
 
-test('do not intercept if not in the origins', async (t) => {
+test('do not intercept if url not passed in urls option', async (t) => {
   const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const refreshToken = createToken(
     { name: 'refresh' },
@@ -619,7 +619,7 @@ test('do not intercept if not in the origins', async (t) => {
   )
 
   const server = http.createServer((req, res) => {
-    assert.strictEqual(req.headers.authorization, undefined)
+    assert.strictEqual(req.headers.authorization, undefined, 'not expecting to be intercepted')
     res.writeHead(200)
     res.end()
   })
@@ -627,21 +627,21 @@ test('do not intercept if not in the origins', async (t) => {
 
   t.after(() => server.close())
 
-  const origin = `http://localhost:${server.address().port}`
+  const targetUrl = `http://localhost:${server.address().port}`
 
   const dispatcher = new Agent({
     interceptors: {
       Pool: [createOidcInterceptor({
         accessToken,
         refreshToken,
-        origins: [origin],
+        urls: [targetUrl],
         idpTokenUrl: 'http://doesntmatter.com/token',
         clientId: 'client-id'
       })]
     }
   })
 
-  // we use a different origin
+  // we use a different hostname for local to make sure the interceptor does not intercept
   const { statusCode } = await request(`http://127.0.0.1:${server.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
 })

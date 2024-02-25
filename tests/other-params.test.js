@@ -3,7 +3,6 @@
 const test = require('node:test')
 const http = require('node:http')
 const { request, Agent } = require('undici')
-const { createDecoder } = require('fast-jwt')
 const { createOidcInterceptor } = require('../')
 const { createToken } = require('./helper')
 const { tspl } = require('@matteo.collina/tspl')
@@ -59,7 +58,7 @@ test('scope', async (t) => {
         clientSecret: 'client-secret',
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         scope: expectedScope
       })]
     }
@@ -121,7 +120,7 @@ test('resource', async (t) => {
         clientSecret: 'client-secret',
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         resource: expectedResource
       })]
     }
@@ -184,7 +183,7 @@ test('audience', async (t) => {
         clientSecret: 'client-secret',
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         audience: expectedAudience
       })]
     }
@@ -246,7 +245,7 @@ test('multiple resources', async (t) => {
         clientSecret: 'client-secret',
         retryOnStatusCodes: [401],
         idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        origins: [`http://localhost:${mainServer.address().port}`],
+        urls: [`http://localhost:${mainServer.address().port}`],
         resource: expectedResources
       })]
     }

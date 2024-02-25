@@ -13,9 +13,9 @@ const dispatcher = new Agent({
       // retry the request on
       retryOnStatusCodes: [401],
 
-      // The origins that this interceptor will add the `Authorization` header
-      // automatically
-      origins: ['http://localhost:3002']
+      // The array of urls that this interceptor will be appending `Authorization` header
+      // for automatically
+      urls: ['http://localhost:3002']
     })]
   }
 })

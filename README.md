@@ -32,9 +32,9 @@ const dispatcher = new Agent({
       // retry the request on
       retryOnStatusCodes: [401],
 
-      // The origins that this interceptor will add the `Authorization` header
-      // automatically
-      origins: ['FILLME'],
+      // The array of urls that this interceptor will be appending `Authorization` header
+      // for automatically
+      urls: ['FILLME'],
 
       // OPTIONAL: an initial access token
       accessToken: ''
@@ -61,9 +61,9 @@ const dispatcher = new Agent({
       // retry the request on
       retryOnStatusCodes: [401],
 
-      // The origins that this interceptor will add the `Authorization` header
-      // automatically
-      origins: []
+      // The array of urls that this interceptor will be appending `Authorization` header
+      // for automatically
+      urls: []
 
       // OPTIONAL: an initial access token
       accessToken: ''
