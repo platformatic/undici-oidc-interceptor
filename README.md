@@ -49,7 +49,7 @@ const dispatcher = new Agent({
 const { Agent } = require('undici')
 const { createOidcInterceptor } = require('undici-oidc-interceptor')
 const dispatcher = new Agent({
-  intercpetors: {
+  interceptors: {
     Pool: [createOidcInterceptor({
       // Provide a refresh token so the interceptor can manage the access token
       // The refresh token must include an issuer (`iss`)
