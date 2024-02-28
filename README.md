@@ -19,7 +19,7 @@ npm i undici undici-oidc-interceptor
 
 ```
 const { Agent } = require('undici')
-const { createOAuthIntercpetor } = require('undici-oidc-interceptor')
+const { createOidcIntercpetor } = require('undici-oidc-interceptor')
 const dispatcher = new Agent({
   interceptors: {
     Pool: [createOidcIntercpetor({
@@ -47,10 +47,10 @@ const dispatcher = new Agent({
 
 ```javascript
 const { Agent } = require('undici')
-const { createOAuthIntercpetor } = require('undici-oidc-interceptor')
+const { createOidcIntercpetor } = require('undici-oidc-interceptor')
 const dispatcher = new Agent({
   intercpetors: {
-    Pool: [createOAuthIntercpetor({
+    Pool: [createOidcIntercpetor({
       // Provide a refresh token so the interceptor can manage the access token
       // The refresh token must include an issuer (`iss`)
       refreshToken: '',
