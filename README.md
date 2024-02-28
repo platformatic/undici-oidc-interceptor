@@ -63,7 +63,7 @@ const dispatcher = new Agent({
 
       // The array of urls that this interceptor will be appending `Authorization` header
       // for automatically
-      urls: []
+      urls: [],
 
       // OPTIONAL: an initial access token
       accessToken: ''
