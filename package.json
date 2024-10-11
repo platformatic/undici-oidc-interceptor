@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@matteo.collina/tspl": "^0.1.1",
-    "borp": "^0.17.0",
+    "borp": "^0.18.0",
     "fast-querystring": "^1.1.2",
     "fastify": "^4.24.3",
     "get-jwks": "^9.0.1",
