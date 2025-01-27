@@ -36,18 +36,14 @@ test('error when refreshing', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        urls: [`http://localhost:${mainServer.address().port}`],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id'
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    urls: [`http://localhost:${mainServer.address().port}`],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id'
+  }))
 
   await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
 })
@@ -79,18 +75,14 @@ test('after service rejects the token, token service reject token, error request
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
 })
@@ -121,18 +113,14 @@ test('missing token', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
 })
@@ -165,18 +153,14 @@ test('201 status code', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
 })
@@ -208,18 +192,14 @@ test('wrong token_type', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        urls: [`http://localhost:${mainServer.address().port}`],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id'
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    urls: [`http://localhost:${mainServer.address().port}`],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id'
+  }))
 
   await assert.rejects(request(`http://localhost:${mainServer.address().port}`, { dispatcher }))
 })

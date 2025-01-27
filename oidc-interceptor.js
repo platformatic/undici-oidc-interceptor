@@ -77,7 +77,7 @@ function createOidcInterceptor (options) {
       if (opts.oauthRetry) {
         return callRefreshToken()
           .catch(err => {
-            handler.onError(err)
+            handler.onResponseError(handler, err)
           })
           .then(newAccessToken => {
             accessToken = newAccessToken
@@ -126,7 +126,7 @@ function createOidcInterceptor (options) {
           return callRefreshToken()
             .then(saveTokenAndRetry)
             .catch(err => {
-              handler.onError(err)
+              handler.onResponseError(handler, err)
             })
         case TOKEN_STATE.NEAR_EXPIRATION:
           callRefreshToken()

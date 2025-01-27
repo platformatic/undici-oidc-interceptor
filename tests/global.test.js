@@ -42,17 +42,13 @@ test('get an access token if no token provided', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        refreshToken,
-        retryOnStatusCodes: [401],
-        urls: [`http://localhost:${mainServer.address().port}`],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id'
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    refreshToken,
+    retryOnStatusCodes: [401],
+    urls: [`http://localhost:${mainServer.address().port}`],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id'
+  }))
 
   setGlobalDispatcher(dispatcher)
 
