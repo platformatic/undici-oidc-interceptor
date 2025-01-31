@@ -55,3 +55,42 @@ test('get an access token if no token provided', async (t) => {
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`)
   assert.strictEqual(statusCode, 200)
 })
+
+test('get an access token with the same origin as idpTokenUrl', async (t) => {
+  let accessToken = ''
+  const server = http.createServer((req, res) => {
+    if(req.method === 'POST' && req.url === '/token') {
+      accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+      res.writeHead(200)
+      res.end(JSON.stringify({ access_token: accessToken }))
+    } else {
+      assert.ok(req.headers.authorization.length > 'Bearer '.length)
+      assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+      res.writeHead(200)
+      res.end()
+    }
+  })
+  server.listen(0)
+
+  t.after(() => {
+    server.close()
+  })
+
+  const refreshToken = createToken(
+    { name: 'refresh' },
+    { expiresIn: '1d' }
+  )
+
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    refreshToken,
+    retryOnStatusCodes: [401],
+    urls: [`http://localhost:${server.address().port}`],
+    idpTokenUrl: `http://localhost:${server.address().port}/token`,
+    clientId: 'client-id'
+  }))
+
+  setGlobalDispatcher(dispatcher)
+
+  const { statusCode } = await request(`http://localhost:${server.address().port}`)
+  assert.strictEqual(statusCode, 200)
+})
