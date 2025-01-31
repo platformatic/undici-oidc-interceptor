@@ -69,7 +69,7 @@ function createOidcInterceptor (options) {
 
   return dispatch => {
     return function Intercept (opts, handler) {
-      if (!opts.oauthRetry && !urls.includes(opts.origin)) {
+      if ((!opts.oauthRetry && !urls.includes(opts.origin)) || idpTokenUrl === `${opts.origin}${opts.path}`) {
         // do not attempt intercept
         return dispatch(opts, handler)
       }
