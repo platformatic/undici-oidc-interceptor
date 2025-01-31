@@ -27,17 +27,13 @@ test('attach provided access token to the request', async (t) => {
 
   const targetUrl = `http://localhost:${server.address().port}`
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        urls: [targetUrl],
-        idpTokenUrl: 'http://doesntmatter.com/token',
-        clientId: 'client-id'
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    urls: [targetUrl],
+    idpTokenUrl: 'http://doesntmatter.com/token',
+    clientId: 'client-id'
+  }))
 
   const { statusCode } = await request(targetUrl, { dispatcher })
   assert.strictEqual(statusCode, 200)
@@ -73,17 +69,13 @@ test('get an access token if no token provided', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        refreshToken,
-        retryOnStatusCodes: [401],
-        clientId: 'client-id',
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    refreshToken,
+    retryOnStatusCodes: [401],
+    clientId: 'client-id',
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
@@ -120,18 +112,14 @@ test('refresh access token if expired', async (t) => {
     { expiresIn: '1d', sub: 'client-id' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
@@ -175,18 +163,14 @@ test('refresh token within refresh window', async (t) => {
     { expiresIn: '1d'}
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken: oldAccessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken: oldAccessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   const tokenRefreshed = once(dispatcher, 'oauth:token-refreshed')
 
@@ -222,18 +206,14 @@ test('do not refresh just outside of refresh window', async (t) => {
     { expiresIn: '1d'}
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
@@ -280,18 +260,14 @@ test('refresh access token if server rejects, retry request', async (t) => {
     { expiresIn: '1d'}
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   const p = Promise.all([
     once(ee, 'token-refreshed'),
@@ -329,18 +305,14 @@ test('do not intercept request', async (t) => {
     { name: 'refresh' },
     { expiresIn: '1d'}
   )
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        interceptDomains: ['example.com'],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
-        clientId: 'client-id',
-        urls: [`localhost:${server.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    interceptDomains: ['example.com'],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+    clientId: 'client-id',
+    urls: [`localhost:${server.address().port}`]
+  }))
 
   const { statusCode } = await request(`http://localhost:${server.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
@@ -373,17 +345,13 @@ test('request is intercepted', async (t) => {
     { name: 'refresh' },
     { expiresIn: '1d' }
   )
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
-        clientId: 'client-id',
-        urls: [`localhost:${server.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+    clientId: 'client-id',
+    urls: [`localhost:${server.address().port}`]
+  }))
 
   const { statusCode } = await request(`http://localhost:${server.address().port}`, {
     dispatcher,
@@ -425,16 +393,12 @@ test('token created only once', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        refreshToken,
-        urls: [`http://localhost:${mainServer.address().port}`],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id' 
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    refreshToken,
+    urls: [`http://localhost:${mainServer.address().port}`],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id' 
+  }))
 
   const results = await Promise.all([
     request(`http://localhost:${mainServer.address().port}`, { dispatcher }),
@@ -489,17 +453,13 @@ test('only retries on provided status codes', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
-        clientId: 'client-id',
-        retryOnStatusCodes: [401] // will not retry because server is returning 403
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}`,
+    clientId: 'client-id',
+    retryOnStatusCodes: [401] // will not retry because server is returning 403
+  }))
 
   const response = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
   assert.strictEqual(response.statusCode, 403)
@@ -508,11 +468,7 @@ test('only retries on provided status codes', async (t) => {
 test('error handling on creation', async (t) => {
   {
     assert.throws(() => {
-      new Agent({
-        interceptors: {
-          Pool: [createOidcInterceptor({ refreshToken: '' })]
-        }
-      })
+      new Agent().compose(createOidcInterceptor({ refreshToken: '' }))
     }, { message: 'No idpTokenUrl provided' })
   }
 
@@ -520,11 +476,7 @@ test('error handling on creation', async (t) => {
     const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d' })
 
     assert.throws(() => {
-      new Agent({
-        interceptors: {
-          Pool: [createOidcInterceptor({ refreshToken, idpTokenUrl: 'aa' })]
-        }
-      })
+      new Agent().compose(createOidcInterceptor({ refreshToken, idpTokenUrl: 'aa' }))
     }, { message: 'No clientId provided' })
   }
 })
@@ -581,18 +533,14 @@ test('optimistic refresh', async (t) => {
     { expiresIn: '1d' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken: oldAccessToken,
-        refreshToken,
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        clientId: 'client-id',
-        urls: [`http://localhost:${mainServer.address().port}`]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken: oldAccessToken,
+    refreshToken,
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    clientId: 'client-id',
+    urls: [`http://localhost:${mainServer.address().port}`]
+  }))
 
   const tokenRefreshed = once(dispatcher, 'oauth:token-refreshed')
 
@@ -629,17 +577,13 @@ test('do not intercept if url not passed in urls option', async (t) => {
 
   const targetUrl = `http://localhost:${server.address().port}`
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        accessToken,
-        refreshToken,
-        urls: [targetUrl],
-        idpTokenUrl: 'http://doesntmatter.com/token',
-        clientId: 'client-id'
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    accessToken,
+    refreshToken,
+    urls: [targetUrl],
+    idpTokenUrl: 'http://doesntmatter.com/token',
+    clientId: 'client-id'
+  }))
 
   // we use a different hostname for local to make sure the interceptor does not intercept
   const { statusCode } = await request(`http://127.0.0.1:${server.address().port}`, { dispatcher })

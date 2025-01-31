@@ -20,9 +20,7 @@ npm i undici undici-oidc-interceptor
 ```js
 const { Agent } = require('undici')
 const { createOidcInterceptor } = require('undici-oidc-interceptor')
-const dispatcher = new Agent({
-  interceptors: {
-    Pool: [createOidcInterceptor({
+const dispatcher = new Agent().compose(createOidcInterceptor({
       // The paramerts for the cliend_credentials grant of OIDC
       clientId: 'FILLME',
       clientSecret: 'FILLME',
@@ -38,9 +36,7 @@ const dispatcher = new Agent({
 
       // OPTIONAL: an initial access token
       accessToken: ''
-    })]
-  }
-})
+    }))
 ``` 
 
 ## Usage with refresh token
@@ -48,9 +44,7 @@ const dispatcher = new Agent({
 ```js
 const { Agent } = require('undici')
 const { createOidcInterceptor } = require('undici-oidc-interceptor')
-const dispatcher = new Agent({
-  interceptors: {
-    Pool: [createOidcInterceptor({
+const dispatcher = new Agent().compose(createOidcInterceptor({
       // Provide a refresh token so the interceptor can manage the access token
       // The refresh token must include an issuer (`iss`)
       refreshToken: '',
@@ -67,9 +61,7 @@ const dispatcher = new Agent({
 
       // OPTIONAL: an initial access token
       accessToken: ''
-    })]
-  }
-})
+    }))
 ``` 
 
 ## License

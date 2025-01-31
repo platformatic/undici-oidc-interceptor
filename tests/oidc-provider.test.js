@@ -36,16 +36,12 @@ test('interceptor works with oidc-provider', async (t) => {
 
   const targetUrl = `http://localhost:${mainServer.address().port}`
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({ 
-        clientId: 'foo',
-        clientSecret: 'bar',
-        idpTokenUrl,
-        urls: [targetUrl]
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({ 
+    clientId: 'foo',
+    clientSecret: 'bar',
+    idpTokenUrl,
+    urls: [targetUrl]
+  }))
 
   const response = await request(targetUrl, {
     dispatcher

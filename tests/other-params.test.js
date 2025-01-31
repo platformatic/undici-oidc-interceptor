@@ -51,18 +51,14 @@ test('scope', async (t) => {
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        clientId: 'client-id',
-        clientSecret: 'client-secret',
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        urls: [`http://localhost:${mainServer.address().port}`],
-        scope: expectedScope
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    urls: [`http://localhost:${mainServer.address().port}`],
+    scope: expectedScope
+  }))
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -113,18 +109,14 @@ test('resource', async (t) => {
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        clientId: 'client-id',
-        clientSecret: 'client-secret',
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        urls: [`http://localhost:${mainServer.address().port}`],
-        resource: expectedResource
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    urls: [`http://localhost:${mainServer.address().port}`],
+    resource: expectedResource
+  }))
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -176,18 +168,14 @@ test('audience', async (t) => {
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        clientId: 'client-id',
-        clientSecret: 'client-secret',
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        urls: [`http://localhost:${mainServer.address().port}`],
-        audience: expectedAudience
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    urls: [`http://localhost:${mainServer.address().port}`],
+    audience: expectedAudience
+  }))
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -238,18 +226,14 @@ test('multiple resources', async (t) => {
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
 
-  const dispatcher = new Agent({
-    interceptors: {
-      Pool: [createOidcInterceptor({
-        clientId: 'client-id',
-        clientSecret: 'client-secret',
-        retryOnStatusCodes: [401],
-        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-        urls: [`http://localhost:${mainServer.address().port}`],
-        resource: expectedResources
-      })]
-    }
-  })
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    retryOnStatusCodes: [401],
+    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+    urls: [`http://localhost:${mainServer.address().port}`],
+    resource: expectedResources
+  }))
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
