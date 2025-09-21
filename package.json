@@ -5,11 +5,13 @@
   "main": "oidc-interceptor.js",
   "scripts": {
     "lint": "standard",
-    "test": "borp --coverage"
+    "test": "borp --coverage",
+    "redis": "docker run --rm -d -p 6379:6379 redis redis-server"
   },
   "author": "Platformatic",
   "license": "MIT",
   "dependencies": {
+    "async-cache-dedupe": "^3.1.0",
     "fast-jwt": "^5.0.0",
     "undici": "^7.0.0"
   },
@@ -19,6 +21,7 @@
     "fast-querystring": "^1.1.2",
     "fastify": "^5.0.0",
     "get-jwks": "^11.0.0",
+    "ioredis": "^5.7.0",
     "jwks": "^1.0.0",
     "oidc-provider": "^8.4.5",
     "standard": "^17.1.0"

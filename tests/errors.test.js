@@ -137,7 +137,7 @@ test('201 status code', async (t) => {
     assert.strictEqual(req.method, 'POST')
     assert.strictEqual(req.url, '/token')
 
-    res.writeHead(201) 
+    res.writeHead(201)
     // the response does not matter
     res.end(JSON.stringify({ access_token: 'kaboom' }))
   })
