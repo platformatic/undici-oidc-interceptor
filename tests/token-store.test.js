@@ -3,7 +3,7 @@
 const { test, describe, before, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const Redis = require('ioredis')
-const createTokenStore = require('../token-store')
+const createTokenStore = require('../lib/token-store')
 const { setGlobalDispatcher, MockAgent } = require('undici')
 
 const mockAgent = new MockAgent()

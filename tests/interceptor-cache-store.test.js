@@ -8,7 +8,7 @@ const { request, Agent } = require('undici')
 const { setTimeout: sleep } = require('node:timers/promises')
 const { createToken } = require('./helper')
 const createOidcInterceptor = require('../oidc-interceptor')
-const createTokenStore = require('../token-store')
+const createTokenStore = require('../lib/token-store')
 
 const redisClient = new Redis()
 

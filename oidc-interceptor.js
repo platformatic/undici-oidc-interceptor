@@ -2,7 +2,7 @@
 
 const { createDecoder } = require('fast-jwt')
 const { RetryHandler, getGlobalDispatcher } = require('undici')
-const createTokenStore = require('./token-store')
+const createTokenStore = require('./lib/token-store')
 
 const decode = createDecoder()
 const EXP_DIFF_MS = 10 * 1000
@@ -57,6 +57,7 @@ function createOidcInterceptor (options) {
 
   if (!clientId) throw new Error('No clientId provided')
 
+  const refreshTokenPromises = new Map()
   let _requestingRefresh
   function callRefreshToken () {
     if (_requestingRefresh) return _requestingRefresh
@@ -74,15 +75,24 @@ function createOidcInterceptor (options) {
 
     _requestingRefresh = tokenStore.token(tokenOptions)
       .then(async token => {
-
+ 
         // Check again the token state in case it expired after fetch 
         // If expired, clear the cache and fetch a new one
         // If near expiration, clear the cache but return current token
         // If valid, return current token
         switch (getTokenState(token)) {
           case TOKEN_STATE.EXPIRED:
-            await tokenStore.clear(tokenOptions)
-            return await tokenStore.token(tokenOptions)
+            const optionsKey = JSON.stringify(options)
+            if(!refreshTokenPromises.has(optionsKey)) {
+              const promise = (async () => {
+                await tokenStore.clear(tokenOptions)
+                return await tokenStore.token(tokenOptions)
+              })()
+              refreshTokenPromises.set(optionsKey, promise)
+              promise.finally(() => refreshTokenPromises.delete(optionsKey))
+            }
+
+            return await refreshTokenPromises.get(optionsKey)
           case TOKEN_STATE.NEAR_EXPIRATION:
             // trigger refresh but return current token
             tokenStore.clear(tokenOptions).catch(() => { /* do nothing */ })
@@ -90,6 +100,7 @@ function createOidcInterceptor (options) {
           default:
             return token
         }
+      /* c8 ignore next */
       }).finally(() => _requestingRefresh = null)
 
     return _requestingRefresh
