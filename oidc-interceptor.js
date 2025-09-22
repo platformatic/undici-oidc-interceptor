@@ -2,7 +2,7 @@
 
 const { createDecoder } = require('fast-jwt')
 const { RetryHandler, getGlobalDispatcher } = require('undici')
-const { createTokenStore } = require('./cache-store')
+const createTokenStore = require('./token-store')
 
 const decode = createDecoder()
 const EXP_DIFF_MS = 10 * 1000
@@ -174,3 +174,4 @@ function createOidcInterceptor (options) {
 
 module.exports = createOidcInterceptor
 module.exports.createOidcInterceptor = createOidcInterceptor
+module.exports.createTokenStore = createTokenStore

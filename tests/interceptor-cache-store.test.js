@@ -8,7 +8,7 @@ const { request, Agent } = require('undici')
 const { setTimeout: sleep } = require('node:timers/promises')
 const { createToken } = require('./helper')
 const createOidcInterceptor = require('../oidc-interceptor')
-const { createTokenStore } = require('../cache-store')
+const createTokenStore = require('../token-store')
 
 const redisClient = new Redis()
 
@@ -263,16 +263,12 @@ describe('interceptor cache store', async () => {
     assert.strictEqual(tokenRequestCount, 1)
   })
 
-  test('should regenerate access token after expiration', async (t) => {
+  test('should regenerate access token after expiration and request with new token only', async (t) => {
     const accessToken = ''; let oldAccessToken = ''; let newAccessToken = ''
     let tokenRequestCount = 0
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
-      if (tokenRequestCount === 1) {
-        assert.strictEqual(req.headers.authorization, `Bearer ${oldAccessToken}`)
-      } else if (tokenRequestCount === 2) {
-        assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`)
-      }
+      assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`)
       res.writeHead(200)
       res.end()
     })
