@@ -3,7 +3,7 @@
 const { test, describe, before, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const Redis = require('ioredis')
-const createTokenStore = require('../lib/token-store')
+const TokenStore = require('../lib/token-store')
 const { setGlobalDispatcher, MockAgent } = require('undici')
 
 const mockAgent = new MockAgent()
@@ -23,7 +23,7 @@ describe('cache store', async () => {
 
   describe('instance', async () => {
     test('creates a cache instance', async () => {
-      const cacheStore = createTokenStore({
+      const cacheStore = new TokenStore({
         ttl: 30000,
         storage: { type: 'memory' }
       })
@@ -33,7 +33,7 @@ describe('cache store', async () => {
     })
 
     test('creates a cache instance with in-memory store', async () => {
-      const cacheStore = createTokenStore({
+      const cacheStore = new TokenStore({
         ttl: 30000,
         storage: { type: 'memory' },
         inMemoryCacheTTL: 10000
@@ -60,7 +60,7 @@ describe('cache store', async () => {
         access_token: 'new-access-token'
       })
 
-      const cacheStore = createTokenStore({
+      const cacheStore = new TokenStore({
         name: 'test-cache',
         ttl: 100,
         storage: { type: 'redis', options: { client: redisClient } },
@@ -93,7 +93,7 @@ describe('cache store', async () => {
         access_token: 'new-access-token'
       })
 
-      const cacheStore = createTokenStore({
+      const cacheStore = new TokenStore({
         name: 'test-cache',
         ttl: 100,
         storage: { type: 'redis', options: { client: redisClient } },
@@ -137,7 +137,7 @@ describe('cache store', async () => {
         access_token: 'new-access-token'
       })
 
-      const cacheStore = createTokenStore({
+      const cacheStore = new TokenStore({
         name: 'test-cache',
         ttl: 100,
         storage: { type: 'redis', options: { client: redisClient } },

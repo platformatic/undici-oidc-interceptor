@@ -8,7 +8,6 @@ const { request, Agent } = require('undici')
 const { setTimeout: sleep } = require('node:timers/promises')
 const { createToken } = require('./helper')
 const createOidcInterceptor = require('../oidc-interceptor')
-const createTokenStore = require('../lib/token-store')
 
 const redisClient = new Redis()
 
@@ -46,17 +45,16 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const cacheStore = createTokenStore({
-      ttl: 100,
-      storage: { type: 'memory' }
-    })
 
     const dispatcher = new Agent().compose(createOidcInterceptor({
       retryOnStatusCodes: [401],
       clientId: 'client-id',
       idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
       urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: cacheStore
+      tokenStore: {
+        ttl: 100,
+        storage: { type: 'memory' }
+      }
     }))
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -88,19 +86,17 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const cacheStore = createTokenStore({
-      name: 'test-cache',
-      ttl: 100,
-      storage: { type: 'redis', options: { client: redisClient } },
-      serialize: (key) => key.clientId
-    })
-
     const dispatcher = new Agent().compose(createOidcInterceptor({
       retryOnStatusCodes: [401],
       clientId: 'client-id',
       idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
       urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: cacheStore
+      tokenStore: {
+        name: 'test-cache',
+        ttl: 100,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId
+      }
     }))
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -133,19 +129,17 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const cacheStore = createTokenStore({
-      name: 'test-cache',
-      ttl: 1,
-      storage: { type: 'redis', options: { client: redisClient } },
-      serialize: (key) => key.clientId
-    })
-
     const dispatcher = new Agent().compose(createOidcInterceptor({
       retryOnStatusCodes: [401],
       clientId: 'client-id',
       idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
       urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: cacheStore
+      tokenStore: {
+        name: 'test-cache',
+        ttl: 1,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId
+      }
     }))
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -191,19 +185,17 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const cacheStore = createTokenStore({
-      name: 'test-cache',
-      ttl: 1,
-      storage: { type: 'redis', options: { client: redisClient } },
-      serialize: (key) => key.clientId
-    })
-
     const dispatcher = new Agent().compose(createOidcInterceptor({
       retryOnStatusCodes: [401],
       clientId: 'client-id',
       idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
       urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: cacheStore
+      tokenStore: {
+        name: 'test-cache',
+        ttl: 1,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId
+      }
     }))
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -243,19 +235,17 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const cacheStore = createTokenStore({
-      name: 'test-cache',
-      ttl: 1,
-      storage: { type: 'redis', options: { client: redisClient } },
-      serialize: (key) => key.clientId
-    })
-
     const dispatcher = new Agent().compose(createOidcInterceptor({
       retryOnStatusCodes: [401],
       clientId: 'client-id',
       idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
       urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: cacheStore
+      tokenStore: {
+        name: 'test-cache',
+        ttl: 1,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId
+      }
     }))
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
@@ -296,19 +286,17 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const cacheStore = createTokenStore({
-      name: 'test-cache',
-      ttl: 1,
-      storage: { type: 'redis', options: { client: redisClient } },
-      serialize: (key) => key.clientId
-    })
-
     const dispatcher = new Agent().compose(createOidcInterceptor({
       retryOnStatusCodes: [401],
       clientId: 'client-id',
       idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
       urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: cacheStore
+      tokenStore: {
+        name: 'test-cache',
+        ttl: 1,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId
+      }
     }))
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })

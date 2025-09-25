@@ -1,8 +1,9 @@
 'use strict'
 
 const { createDecoder } = require('fast-jwt')
+const stringify = require('safe-stable-stringify')
 const { RetryHandler, getGlobalDispatcher } = require('undici')
-const createTokenStore = require('./lib/token-store')
+const TokenStore = require('./lib/token-store')
 
 const decode = createDecoder()
 const EXP_DIFF_MS = 10 * 1000
@@ -35,18 +36,16 @@ function createOidcInterceptor (options) {
     scope,
     resource,
     audience,
-    tokenStore
+    tokenStore = {
+      ttl: 0,
+      storage: { type: 'memory' }
+    }
   } = options
 
   retryOnStatusCodes = retryOnStatusCodes || [401]
   urls = urls || []
 
-  if (!tokenStore) {
-    tokenStore = createTokenStore({
-      ttl: 0,
-      storage: { type: 'memory' }
-    })
-  }
+  const store = new TokenStore(tokenStore)
 
   // TODO: if there is a refresh_token, we might not need the idpTokenUrl and use the standard
   // discovery mechanism. See
@@ -73,7 +72,7 @@ function createOidcInterceptor (options) {
       audience
     }
 
-    _requestingRefresh = tokenStore.token(tokenOptions)
+    _requestingRefresh = store.token(tokenOptions)
       .then(async token => {
  
         // Check again the token state in case it expired after fetch 
@@ -82,11 +81,11 @@ function createOidcInterceptor (options) {
         // If valid, return current token
         switch (getTokenState(token)) {
           case TOKEN_STATE.EXPIRED:
-            const optionsKey = JSON.stringify(options)
+            const optionsKey = stringify(options)
             if(!refreshTokenPromises.has(optionsKey)) {
               const promise = (async () => {
-                await tokenStore.clear(tokenOptions)
-                return await tokenStore.token(tokenOptions)
+                await store.clear(tokenOptions)
+                return await store.token(tokenOptions)
               })()
               refreshTokenPromises.set(optionsKey, promise)
               promise.finally(() => refreshTokenPromises.delete(optionsKey))
@@ -95,7 +94,7 @@ function createOidcInterceptor (options) {
             return await refreshTokenPromises.get(optionsKey)
           case TOKEN_STATE.NEAR_EXPIRATION:
             // trigger refresh but return current token
-            tokenStore.clear(tokenOptions).catch(() => { /* do nothing */ })
+            store.clear(tokenOptions).catch(() => { /* do nothing */ })
             return token
           default:
             return token
@@ -185,4 +184,3 @@ function createOidcInterceptor (options) {
 
 module.exports = createOidcInterceptor
 module.exports.createOidcInterceptor = createOidcInterceptor
-module.exports.createTokenStore = createTokenStore
