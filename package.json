@@ -23,7 +23,7 @@
     "get-jwks": "^11.0.0",
     "ioredis": "^5.7.0",
     "jwks": "^1.0.0",
-    "oidc-provider": "^8.4.5",
+    "oidc-provider": "^9.0.0",
     "standard": "^17.1.0"
   }
 }
