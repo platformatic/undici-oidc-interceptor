@@ -1,8 +1,9 @@
 'use strict'
 
 const { createDecoder } = require('fast-jwt')
-const { refreshAccessToken } = require('./lib/utils')
+const stringify = require('safe-stable-stringify')
 const { RetryHandler, getGlobalDispatcher } = require('undici')
+const TokenStore = require('./lib/token-store')
 
 const decode = createDecoder()
 const EXP_DIFF_MS = 10 * 1000
@@ -34,11 +35,17 @@ function createOidcInterceptor (options) {
     clientId,
     scope,
     resource,
-    audience
+    audience,
+    tokenStore = {
+      ttl: 0,
+      storage: { type: 'memory' }
+    }
   } = options
 
   retryOnStatusCodes = retryOnStatusCodes || [401]
   urls = urls || []
+
+  const store = new TokenStore(tokenStore)
 
   // TODO: if there is a refresh_token, we might not need the idpTokenUrl and use the standard
   // discovery mechanism. See
@@ -49,11 +56,12 @@ function createOidcInterceptor (options) {
 
   if (!clientId) throw new Error('No clientId provided')
 
+  const refreshTokenPromises = new Map()
   let _requestingRefresh
   function callRefreshToken () {
     if (_requestingRefresh) return _requestingRefresh
 
-    _requestingRefresh = refreshAccessToken({
+    const tokenOptions = {
       idpTokenUrl,
       refreshToken,
       clientId,
@@ -62,7 +70,37 @@ function createOidcInterceptor (options) {
       scope,
       resource,
       audience
-    }).finally(() => _requestingRefresh = null)
+    }
+
+    _requestingRefresh = store.token(tokenOptions)
+      .then(async token => {
+ 
+        // Check again the token state in case it expired after fetch 
+        // If expired, clear the cache and fetch a new one
+        // If near expiration, clear the cache but return current token
+        // If valid, return current token
+        switch (getTokenState(token)) {
+          case TOKEN_STATE.EXPIRED:
+            const optionsKey = stringify(options)
+            if(!refreshTokenPromises.has(optionsKey)) {
+              const promise = (async () => {
+                await store.clear(tokenOptions)
+                return await store.token(tokenOptions)
+              })()
+              refreshTokenPromises.set(optionsKey, promise)
+              promise.finally(() => refreshTokenPromises.delete(optionsKey))
+            }
+
+            return await refreshTokenPromises.get(optionsKey)
+          case TOKEN_STATE.NEAR_EXPIRATION:
+            // trigger refresh but return current token
+            store.clear(tokenOptions).catch(() => { /* do nothing */ })
+            return token
+          default:
+            return token
+        }
+      /* c8 ignore next */
+      }).finally(() => _requestingRefresh = null)
 
     return _requestingRefresh
   }
@@ -79,9 +117,7 @@ function createOidcInterceptor (options) {
           .catch(err => {
             handler.onResponseError(handler, err)
           })
-          .then(newAccessToken => {
-            accessToken = newAccessToken
-
+          .then(accessToken => {
             opts.headers.authorization = `Bearer ${accessToken}`
             return dispatch(opts, handler)
           })
@@ -98,7 +134,7 @@ function createOidcInterceptor (options) {
         ...opts,
         oauthRetry: true,
         retryOptions: {
-          statusCodes:  retryOnStatusCodes,
+          statusCodes: retryOnStatusCodes,
           maxRetries: 1,
           retryAfter: 0,
           minTimeout: 0,
@@ -111,28 +147,32 @@ function createOidcInterceptor (options) {
         handler
       })
 
-      const saveTokenAndRetry = newAccessToken => {
-        accessToken = newAccessToken
+      // rebuild request with new access token
+      const rebuildRequest = accessToken => {
         opts.headers = {
           ...opts.headers,
           authorization: `Bearer ${accessToken}`
         }
-        dispatcher.emit('oauth:token-refreshed', newAccessToken)
+        dispatcher.emit('oauth:token-refreshed', accessToken)
         return dispatch(opts, retryHandler)
       }
 
       switch (getTokenState(accessToken)) {
         case TOKEN_STATE.EXPIRED:
           return callRefreshToken()
-            .then(saveTokenAndRetry)
+            .then(token => {
+              accessToken = null // force using new token in next request
+              return token
+            })
+            .then(rebuildRequest)
             .catch(err => {
               handler.onResponseError(handler, err)
             })
         case TOKEN_STATE.NEAR_EXPIRATION:
           callRefreshToken()
-            .then(newAccessToken => {
-              accessToken = newAccessToken
-              dispatcher.emit('oauth:token-refreshed', newAccessToken)
+            .then(token => {
+              accessToken = null // force using new token in next request
+              dispatcher.emit('oauth:token-refreshed', token)
             })
             .catch(/* do nothing */)
         default:

@@ -64,6 +64,36 @@ const dispatcher = new Agent().compose(createOidcInterceptor({
     }))
 ``` 
 
+## Token store
+
+This interceptor uses the [async-cache-dedupe](https://github.com/mcollina/async-cache-dedupe) package to cache access tokens. This improves efficiency by enabling token reuse across processes or instances and avoids unnecessary token refresh requests.
+
+- **Default:** In-memory storage.
+- **Custom storage:** You can provide your own backend (e.g., Redis) by supplying a compatible async-cache-dedupe configuration.
+
+Example: Using Redis as the token store
+```js
+const Redis = require('ioredis')
+const { Agent } = require('undici')
+const { createOidcInterceptor } = require('undici-oidc-interceptor')
+
+const redisClient = new Redis()
+
+const dispatcher = new Agent().compose(createOidcInterceptor({
+  ...options,
+  tokenStore: {
+    name: 'test-cache',
+    ttl: 100,
+    storage: { 
+      type: 'redis', 
+      options: { 
+        client: redisClient 
+      } 
+    }
+  }
+}))
+```
+
 ## License
 
 MIT

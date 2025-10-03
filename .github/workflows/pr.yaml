@@ -17,19 +17,44 @@ concurrency:
       
 jobs:
   test:
+    name: Test (Node ${{ matrix.node-version }}, ${{ matrix.redis.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20, 22, 24]
+        redis:
+          - name: "Redis 7.2"
+            image: "redis:7.2-alpine"
+          - name: "Redis 7.4"
+            image: "redis:7.4-alpine"
+          - name: "Redis 8.2"
+            image: "redis:8.2.1-alpine"
+          - name: "Valkey 8.0"
+            image: "valkey/valkey:8.0-alpine"
+          - name: "Valkey 8.1"
+            image: "valkey/valkey:8.1-alpine"
+
+    services:
+      redis:
+        image: ${{ matrix.redis.image }}
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping 2>/dev/null || valkey-cli ping 2>/dev/null || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
       - name: Install
         run: |
