@@ -1,6 +1,6 @@
 {
   "name": "undici-oidc-interceptor",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Automatically manage OIDC access tokens for Undici requests",
   "main": "oidc-interceptor.js",
   "scripts": {
