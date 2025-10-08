@@ -94,6 +94,32 @@ const dispatcher = new Agent().compose(createOidcInterceptor({
 }))
 ```
 
+### Custom TTL
+If you want to customize the TTL for tokens based on the `expiresIn` value from the OIDC response, you can provide a custom function.
+
+Example:
+```js
+const Redis = require('ioredis')
+const { Agent } = require('undici')
+const { createOidcInterceptor } = require('undici-oidc-interceptor')
+
+const redisClient = new Redis()
+
+const dispatcher = new Agent().compose(createOidcInterceptor({
+  ...options,
+  tokenStore: {
+    name: 'test-cache',
+    ttl: (tokenPayload) => tokenPayload.expiresIn * 80 / 100, // Sets token TTL to 80% of the OIDC expiry time
+    storage: { 
+      type: 'redis', 
+      options: { 
+        client: redisClient 
+      } 
+    }
+  }
+}))
+```
+
 ## License
 
 MIT

@@ -73,7 +73,7 @@ describe('cache store', async () => {
         refreshToken: 'refresh-token'
       })
 
-      assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), 'new-access-token')
+      assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), { accessToken: 'new-access-token' })
     })
 
     test('clear token', async (t) => {
@@ -163,7 +163,44 @@ describe('cache store', async () => {
       })
 
       assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), null)
-      assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id-2')), 'new-access-token')
+      assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id-2')), { accessToken: 'new-access-token' })
+    })
+
+    test('custom ttl based on exprires', async (t) => {
+      const refreshMock = mockAgent.get('https://example.com')
+      refreshMock.intercept({
+        method: 'POST',
+        path: '/token',
+        body: body => {
+          const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
+          assert.strictEqual(refresh_token, 'refresh-token')
+          assert.strictEqual(grant_type, 'refresh_token')
+          assert.strictEqual(client_id, 'client-id')
+          return true
+        }
+      }).reply(200, {
+        access_token: 'new-access-token',
+        expires_in: 200
+      })
+
+      const cacheStore = new TokenStore({
+        name: 'test-cache',
+        storage: { type: 'redis', options: { client: redisClient } },
+        ttl: (result) => {
+          assert.deepStrictEqual(result, { expiresIn: 200, accessToken: 'new-access-token' })
+          return result.expiresIn * 50 / 100
+        },
+        serialize: (key) => key.clientId
+      })
+
+      await cacheStore.token({
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id',
+        refreshToken: 'refresh-token'
+      })
+
+      assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), { accessToken: 'new-access-token', expiresIn: 200 })
+      assert.strictEqual(Math.ceil(await redisClient.pttl('test-cache~client-id') / 1000), 100)
     })
   })
 })

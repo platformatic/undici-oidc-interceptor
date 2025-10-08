@@ -22,7 +22,8 @@ test('refreshAccessToken() - success', async (t) => {
       return true
     }
   }).reply(200, {
-    access_token: 'new-access-token'
+    access_token: 'new-access-token',
+    expires_in: 300
   })
 
   const accessToken = await refreshAccessToken({
@@ -30,7 +31,7 @@ test('refreshAccessToken() - success', async (t) => {
     clientId: 'client-id',
     refreshToken: 'refresh-token'
   })
-  assert.strictEqual(accessToken, 'new-access-token')
+  assert.deepStrictEqual(accessToken, { accessToken: 'new-access-token', expiresIn: 300 })
 })
 
 test('refreshAccessToken() - success / json', async (t) => {
@@ -55,5 +56,5 @@ test('refreshAccessToken() - success / json', async (t) => {
     refreshToken: 'refresh-token',
     contentType: 'json'
   })
-  assert.strictEqual(accessToken, 'new-access-token')
+  assert.deepStrictEqual(accessToken, { accessToken: 'new-access-token', expiresIn: undefined })
 })

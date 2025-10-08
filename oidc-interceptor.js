@@ -73,7 +73,8 @@ function createOidcInterceptor (options) {
     }
 
     _requestingRefresh = store.token(tokenOptions)
-      .then(async token => {
+      .then(async (tokenPayload) => {
+        const { accessToken: token } = tokenPayload
  
         // Check again the token state in case it expired after fetch 
         // If expired, clear the cache and fetch a new one
@@ -85,7 +86,7 @@ function createOidcInterceptor (options) {
             if(!refreshTokenPromises.has(optionsKey)) {
               const promise = (async () => {
                 await store.clear(tokenOptions)
-                return await store.token(tokenOptions)
+                return await store.token(tokenOptions).then((tokenPayload) => tokenPayload.accessToken)
               })()
               refreshTokenPromises.set(optionsKey, promise)
               promise.finally(() => refreshTokenPromises.delete(optionsKey))

@@ -101,7 +101,7 @@ describe('interceptor cache store', async () => {
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)
-    assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), accessToken)
+    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), {accessToken})
   })
 
   test('regenerate access token as the store cache is expiried', async (t) => {
@@ -146,7 +146,7 @@ describe('interceptor cache store', async () => {
     const oldAccessToken = accessToken
 
     assert.strictEqual(statusCode, 200)
-    assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), oldAccessToken)
+    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), {accessToken: oldAccessToken})
 
     await sleep(1000)
     assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), null)
@@ -155,7 +155,7 @@ describe('interceptor cache store', async () => {
     const newAccessToken = accessToken
 
     assert.strictEqual(statusCode2, 200)
-    assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), newAccessToken)
+    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), {accessToken: newAccessToken})
     assert.notStrictEqual(oldAccessToken, newAccessToken)
   })
 
