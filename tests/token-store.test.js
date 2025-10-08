@@ -126,11 +126,6 @@ describe('cache store', async () => {
           const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
           assert.strictEqual(refresh_token, 'refresh-token')
           assert.strictEqual(grant_type, 'refresh_token')
-          if(requestCount === 1) {
-            assert.strictEqual(client_id, 'client-id')
-          } else {
-            assert.strictEqual(client_id, 'client-id-2')
-          }
           return true
         }
       }).reply(200, {
@@ -141,7 +136,15 @@ describe('cache store', async () => {
         name: 'test-cache',
         ttl: 100,
         storage: { type: 'redis', options: { client: redisClient } },
-        serialize: (key) => key.clientId
+        serialize: (key) => key.clientId,
+        onMiss: (key) => {
+          requestCount++
+          if(requestCount == 1) {
+            assert.equal(key, 'client-id')
+          } else {
+            assert.equal(key, 'client-id-2')
+          }
+        }
       })
 
       await cacheStore.token({
@@ -201,6 +204,39 @@ describe('cache store', async () => {
 
       assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), { accessToken: 'new-access-token', expiresIn: 200 })
       assert.strictEqual(Math.ceil(await redisClient.pttl('test-cache~client-id') / 1000), 100)
+    })
+
+    test('default ttl should be 80%', async (t) => {
+      const refreshMock = mockAgent.get('https://example.com')
+      refreshMock.intercept({
+        method: 'POST',
+        path: '/token',
+        body: body => {
+          const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
+          assert.strictEqual(refresh_token, 'refresh-token')
+          assert.strictEqual(grant_type, 'refresh_token')
+          assert.strictEqual(client_id, 'client-id-default')
+          return true
+        }
+      }).reply(200, {
+        access_token: 'new-access-token',
+        expires_in: 200
+      })
+
+      const cacheStore = new TokenStore({
+        name: 'test-cache',
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId
+      })
+
+      await cacheStore.token({
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id-default',
+        refreshToken: 'refresh-token'
+      })
+
+      assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id-default')), { accessToken: 'new-access-token', expiresIn: 200 })
+      assert.strictEqual(Math.ceil(await redisClient.pttl('test-cache~client-id-default') / 1000), 160)
     })
   })
 })

@@ -11,9 +11,9 @@ const { createOidcInterceptor } = require('../')
 
 test('interceptor works with oidc-provider', async (t) => {
   const jwks = buildGetJwks({
-    jwksPath: '/jwks',
+    jwksPath: '/jwks'
   })
-  const provider = await testProvider(test, { port: 3000 });
+  const provider = await testProvider(test, { port: 3000 })
   const expectedIssuer = `http://localhost:${provider.address().port}`
   const idp = `${expectedIssuer}/`
   const idpTokenUrl = `${idp}token`
@@ -36,7 +36,7 @@ test('interceptor works with oidc-provider', async (t) => {
 
   const targetUrl = `http://localhost:${mainServer.address().port}`
 
-  const dispatcher = new Agent().compose(createOidcInterceptor({ 
+  const dispatcher = new Agent().compose(createOidcInterceptor({
     clientId: 'foo',
     clientSecret: 'bar',
     idpTokenUrl,
@@ -46,5 +46,5 @@ test('interceptor works with oidc-provider', async (t) => {
   const response = await request(targetUrl, {
     dispatcher
   })
-  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.statusCode, 200)
 })
