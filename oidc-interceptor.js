@@ -37,7 +37,6 @@ function createOidcInterceptor (options) {
     resource,
     audience,
     tokenStore = {
-      ttl: 0,
       storage: { type: 'memory' }
     }
   } = options
@@ -73,19 +72,20 @@ function createOidcInterceptor (options) {
     }
 
     _requestingRefresh = store.token(tokenOptions)
-      .then(async token => {
- 
-        // Check again the token state in case it expired after fetch 
+      .then(async (tokenPayload) => {
+        const { accessToken: token } = tokenPayload
+
+        // Check again the token state in case it expired after fetch
         // If expired, clear the cache and fetch a new one
         // If near expiration, clear the cache but return current token
         // If valid, return current token
         switch (getTokenState(token)) {
           case TOKEN_STATE.EXPIRED:
             const optionsKey = stringify(options)
-            if(!refreshTokenPromises.has(optionsKey)) {
+            if (!refreshTokenPromises.has(optionsKey)) {
               const promise = (async () => {
                 await store.clear(tokenOptions)
-                return await store.token(tokenOptions)
+                return await store.token(tokenOptions).then((tokenPayload) => tokenPayload.accessToken)
               })()
               refreshTokenPromises.set(optionsKey, promise)
               promise.finally(() => refreshTokenPromises.delete(optionsKey))
@@ -111,7 +111,7 @@ function createOidcInterceptor (options) {
         // do not attempt intercept
         return dispatch(opts, handler)
       }
-
+      
       if (opts.oauthRetry) {
         return callRefreshToken()
           .catch(err => {
