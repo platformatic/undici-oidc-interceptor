@@ -1,6 +1,6 @@
 'use strict'
 
-const { test, describe, before, beforeEach, after } = require('node:test')
+const { test, describe, before, after, afterEach } = require('node:test')
 const assert = require('node:assert')
 const Redis = require('ioredis')
 const TokenStore = require('../lib/token-store')
@@ -44,6 +44,10 @@ describe('cache store', async () => {
   })
 
   describe('token', async () => {
+    afterEach(async () => {
+      await redisClient.flushall()
+    })
+
     test('retrieve token with key serialization', async (t) => {
       const refreshMock = mockAgent.get('https://example.com')
       refreshMock.intercept({
@@ -116,22 +120,22 @@ describe('cache store', async () => {
     })
 
     test('should clear token specific options', async (t) => {
-      let requestCount = 0
       const refreshMock = mockAgent.get('https://example.com')
       refreshMock.intercept({
         method: 'POST',
         path: '/token',
         body: body => {
-          requestCount++
           const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
           assert.strictEqual(refresh_token, 'refresh-token')
           assert.strictEqual(grant_type, 'refresh_token')
+          assert.ok(['client-id', 'client-id-2'].includes(client_id))
           return true
         }
       }).reply(200, {
         access_token: 'new-access-token'
-      })
+      }).times(2)
 
+      let requestCount = 0
       const cacheStore = new TokenStore({
         name: 'test-cache',
         ttl: 100,
@@ -139,7 +143,7 @@ describe('cache store', async () => {
         serialize: (key) => key.clientId,
         onMiss: (key) => {
           requestCount++
-          if(requestCount == 1) {
+          if (requestCount == 1) {
             assert.equal(key, 'client-id')
           } else {
             assert.equal(key, 'client-id-2')
