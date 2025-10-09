@@ -201,7 +201,7 @@ describe('interceptor cache store', async () => {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)
 
-    await sleep(1000)
+    await sleep(2000)
 
     const { statusCode: statusCode2 } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode2, 200)
