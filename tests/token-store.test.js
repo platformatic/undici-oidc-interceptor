@@ -1,6 +1,6 @@
 'use strict'
 
-const { test, describe, before, beforeEach, after } = require('node:test')
+const { test, describe, before, after, afterEach } = require('node:test')
 const assert = require('node:assert')
 const Redis = require('ioredis')
 const TokenStore = require('../lib/token-store')
@@ -44,6 +44,10 @@ describe('cache store', async () => {
   })
 
   describe('token', async () => {
+    afterEach(async () => {
+      await redisClient.flushall()
+    })
+
     test('retrieve token with key serialization', async (t) => {
       const refreshMock = mockAgent.get('https://example.com')
       refreshMock.intercept({
