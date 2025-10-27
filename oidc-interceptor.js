@@ -26,7 +26,7 @@ function getTokenState (token) {
 }
 
 function createOidcInterceptor (options) {
-  const { refreshToken, clientSecret, contentType } = options
+  const { refreshToken, clientSecret, contentType, shouldAuthenticate } = options
   let {
     accessToken,
     retryOnStatusCodes,
@@ -107,7 +107,16 @@ function createOidcInterceptor (options) {
 
   return dispatch => {
     return function Intercept (opts, handler) {
-      if ((!opts.oauthRetry && !urls.includes(opts.origin)) || idpTokenUrl === `${opts.origin}${opts.path}`) {
+      // Check shouldAuthenticate first (higher priority)
+      if (shouldAuthenticate) {
+        const shouldAuth = shouldAuthenticate(opts)
+        if (!shouldAuth) {
+          // shouldAuthenticate returned false, skip authentication
+          return dispatch(opts, handler)
+        }
+        // shouldAuthenticate returned true, proceed with authentication
+      } else if ((!opts.oauthRetry && !urls.includes(opts.origin)) || idpTokenUrl === `${opts.origin}${opts.path}`) {
+        // No shouldAuthenticate callback, fall back to urls check
         // do not attempt intercept
         return dispatch(opts, handler)
       }
