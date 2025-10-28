@@ -73,7 +73,7 @@ test('shouldAuthenticate callback - skip authentication when returns false', asy
   assert.strictEqual(statusCode, 200)
 })
 
-test('shouldAuthenticate has higher priority than urls - authenticate with shouldAuthenticate true', async (t) => {
+test('shouldAuthenticate callback - authenticate with shouldAuthenticate true if urls is empty', async (t) => {
   const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const refreshToken = createToken(
     { name: 'refresh' },
@@ -94,7 +94,7 @@ test('shouldAuthenticate has higher priority than urls - authenticate with shoul
   const dispatcher = new Agent().compose(createOidcInterceptor({
     accessToken,
     refreshToken,
-    urls: [], // Empty urls, but shouldAuthenticate should take priority
+    urls: [], // Empty urls, but shouldAuthenticate
     idpTokenUrl: 'http://doesntmatter.com/token',
     clientId: 'client-id',
     shouldAuthenticate: (opts) => opts.headers && opts.headers['x-auth'] === 'required'
@@ -107,7 +107,7 @@ test('shouldAuthenticate has higher priority than urls - authenticate with shoul
   assert.strictEqual(statusCode, 200)
 })
 
-test('shouldAuthenticate has higher priority than urls - skip authentication with shouldAuthenticate false', async (t) => {
+test('shouldAuthenticate callback - skip authentication with shouldAuthenticate false', async (t) => {
   const accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const refreshToken = createToken(
     { name: 'refresh' },
@@ -128,7 +128,7 @@ test('shouldAuthenticate has higher priority than urls - skip authentication wit
   const dispatcher = new Agent().compose(createOidcInterceptor({
     accessToken,
     refreshToken,
-    urls: [targetUrl], // URL is in list, but shouldAuthenticate should take priority
+    urls: [targetUrl], // URL is in list, but shouldAuthenticate
     idpTokenUrl: 'http://doesntmatter.com/token',
     clientId: 'client-id',
     shouldAuthenticate: (opts) => opts.headers && opts.headers['x-auth'] === 'required'
