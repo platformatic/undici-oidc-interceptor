@@ -62,7 +62,33 @@ const dispatcher = new Agent().compose(createOidcInterceptor({
       // OPTIONAL: an initial access token
       accessToken: ''
     }))
-``` 
+```
+
+## Custom authentication decision
+
+```js
+const { Agent } = require('undici')
+const { createOidcInterceptor } = require('undici-oidc-interceptor')
+const dispatcher = new Agent().compose(createOidcInterceptor({
+      // Provide a refresh token so the interceptor can manage the access token
+      // The refresh token must include an issuer (`iss`)
+      refreshToken: '',
+      idpTokenUrl: 'https://your-idp.com/token',
+      clientId: 'FILLME',
+
+      // Set an array of status codes that the interceptor should refresh and
+      // retry the request on
+      retryOnStatusCodes: [401],
+
+      // OPTIONAL: a callback function, if return 'true' then this interceptor will include `Authorization` header
+      shouldAuthenticate: (opts) => opts.header['something'] === 'test',
+
+      // OPTIONAL: an initial access token
+      accessToken: ''
+    }))
+```
+
+> Note: `shouldAuthenticate` has higher priority than urls. Fallback to urls behavior when shouldAuthenticate is not provided
 
 ## Token store
 
