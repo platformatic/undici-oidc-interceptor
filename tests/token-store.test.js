@@ -36,6 +36,7 @@ describe('cache store', async () => {
       const cacheStore = new TokenStore({
         ttl: 30000,
         storage: { type: 'memory' },
+        useInMemoryCache: true,
         inMemoryCacheTTL: 10000
       })
 
@@ -241,6 +242,194 @@ describe('cache store', async () => {
 
       assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id-default')), { accessToken: 'new-access-token', expiresIn: 200 })
       assert.strictEqual(Math.ceil(await redisClient.pttl('test-cache~client-id-default') / 1000), 160)
+    })
+  })
+
+  describe('in-memory cache with Redis', async () => {
+    afterEach(async () => {
+      await redisClient.flushall()
+    })
+
+    test('should fetch from in-memory cache on second call', async (t) => {
+      let callCount = 0
+      const refreshMock = mockAgent.get('https://example.com')
+      refreshMock.intercept({
+        method: 'POST',
+        path: '/token',
+        body: body => {
+          callCount++
+          const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
+          assert.strictEqual(refresh_token, 'refresh-token')
+          assert.strictEqual(grant_type, 'refresh_token')
+          assert.strictEqual(client_id, 'client-id')
+          return true
+        }
+      }).reply(200, {
+        access_token: 'new-access-token',
+        expires_in: 200
+      })
+
+      const cacheStore = new TokenStore({
+        name: 'test-cache-mem',
+        ttl: 100,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId,
+        useInMemoryCache: true,
+        inMemoryCacheTTL: 5000
+      })
+
+      const options = {
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id',
+        refreshToken: 'refresh-token'
+      }
+
+      // First call - fetches from IDP and stores in both Redis and memory
+      const result1 = await cacheStore.token(options)
+      assert.deepStrictEqual(result1, { accessToken: 'new-access-token', expiresIn: 200 })
+      assert.strictEqual(callCount, 1)
+
+      // Second call - should fetch from in-memory cache (not Redis or IDP)
+      const result2 = await cacheStore.token(options)
+      assert.deepStrictEqual(result2, { accessToken: 'new-access-token', expiresIn: 200 })
+      assert.strictEqual(callCount, 1) // Should not have called IDP again
+    })
+
+    test('should fallback to Redis when in-memory cache expires', async (t) => {
+      let callCount = 0
+      const refreshMock = mockAgent.get('https://example.com')
+      refreshMock.intercept({
+        method: 'POST',
+        path: '/token',
+        body: body => {
+          callCount++
+          const { refresh_token, grant_type, client_id } = Object.fromEntries(new URLSearchParams(body))
+          assert.strictEqual(refresh_token, 'refresh-token')
+          assert.strictEqual(grant_type, 'refresh_token')
+          assert.strictEqual(client_id, 'client-id')
+          return true
+        }
+      }).reply(200, {
+        access_token: 'new-access-token',
+        expires_in: 200
+      })
+
+      const cacheStore = new TokenStore({
+        name: 'test-cache-mem-expire',
+        ttl: 10000, // Redis TTL is 10 seconds
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId,
+        useInMemoryCache: true,
+        inMemoryCacheTTL: 100 // In-memory TTL is only 100ms
+      })
+
+      const options = {
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id',
+        refreshToken: 'refresh-token'
+      }
+
+      // First call - fetches from IDP
+      await cacheStore.token(options)
+      assert.strictEqual(callCount, 1)
+
+      // Wait for in-memory cache to expire
+      await new Promise(resolve => setTimeout(resolve, 150))
+
+      // Second call - in-memory expired, should fetch from Redis (not IDP)
+      const result2 = await cacheStore.token(options)
+      assert.deepStrictEqual(result2, { accessToken: 'new-access-token', expiresIn: 200 })
+      assert.strictEqual(callCount, 1) // Should not have called IDP again (still in Redis)
+    })
+
+    test('should clear both in-memory and Redis cache', async (t) => {
+      let callCount = 0
+      const refreshMock = mockAgent.get('https://example.com')
+      refreshMock.intercept({
+        method: 'POST',
+        path: '/token',
+        body: body => {
+          callCount++
+          return true
+        }
+      }).reply(200, {
+        access_token: 'new-access-token',
+        expires_in: 200
+      }).times(2)
+
+      const cacheStore = new TokenStore({
+        name: 'test-cache-clear',
+        ttl: 10000,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId,
+        useInMemoryCache: true,
+        inMemoryCacheTTL: 10000
+      })
+
+      const options = {
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id',
+        refreshToken: 'refresh-token'
+      }
+
+      // First call - stores in both caches
+      await cacheStore.token(options)
+      assert.strictEqual(callCount, 1)
+
+      // Clear the cache
+      await cacheStore.clear(options)
+
+      // Next call should fetch from IDP again (both caches cleared)
+      await cacheStore.token(options)
+      assert.strictEqual(callCount, 2)
+    })
+
+    test('should work with multiple different tokens', async (t) => {
+      let callCount = 0
+      const refreshMock = mockAgent.get('https://example.com')
+      refreshMock.intercept({
+        method: 'POST',
+        path: '/token',
+        body: body => {
+          callCount++
+          const { client_id } = Object.fromEntries(new URLSearchParams(body))
+          return ['client-id-1', 'client-id-2'].includes(client_id)
+        }
+      }).reply(200, {
+        access_token: 'new-access-token',
+        expires_in: 200
+      }).times(2)
+
+      const cacheStore = new TokenStore({
+        name: 'test-cache-multi',
+        ttl: 10000,
+        storage: { type: 'redis', options: { client: redisClient } },
+        serialize: (key) => key.clientId,
+        useInMemoryCache: true,
+        inMemoryCacheTTL: 10000
+      })
+
+      const options1 = {
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id-1',
+        refreshToken: 'refresh-token'
+      }
+
+      const options2 = {
+        idpTokenUrl: 'https://example.com/token',
+        clientId: 'client-id-2',
+        refreshToken: 'refresh-token'
+      }
+
+      // Fetch two different tokens
+      await cacheStore.token(options1)
+      await cacheStore.token(options2)
+      assert.strictEqual(callCount, 2)
+
+      // Fetch again - should come from in-memory cache
+      await cacheStore.token(options1)
+      await cacheStore.token(options2)
+      assert.strictEqual(callCount, 2)
     })
   })
 })
