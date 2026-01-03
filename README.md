@@ -110,15 +110,59 @@ const dispatcher = new Agent().compose(createOidcInterceptor({
   tokenStore: {
     name: 'test-cache',
     ttl: 100,
-    storage: { 
-      type: 'redis', 
-      options: { 
-        client: redisClient 
-      } 
+    storage: {
+      type: 'redis',
+      options: {
+        client: redisClient
+      }
     }
   }
 }))
 ```
+
+### Two-tier caching with in-memory layer
+
+When using Redis (or another external storage) as your token store, you can enable an additional in-memory cache layer for even faster token access. This creates a two-tier caching system:
+
+1. **First tier (in-memory):** Fast local cache that stores tokens in process memory
+2. **Second tier (Redis):** Shared cache that enables token reuse across processes/instances
+
+This is particularly useful in distributed systems where you want the benefits of shared caching via Redis, but also want to minimize network latency for frequently accessed tokens.
+
+Example: Using two-tier caching with Redis
+```js
+const Redis = require('ioredis')
+const { Agent } = require('undici')
+const { createOidcInterceptor } = require('undici-oidc-interceptor')
+
+const redisClient = new Redis()
+
+const dispatcher = new Agent().compose(createOidcInterceptor({
+  ...options,
+  tokenStore: {
+    name: 'test-cache',
+    ttl: 3600, // Redis TTL in seconds
+    storage: {
+      type: 'redis',
+      options: {
+        client: redisClient
+      }
+    },
+    // Enable in-memory cache layer
+    useInMemoryCache: true,
+    inMemoryCacheTTL: 60000 // In-memory TTL in milliseconds (60 seconds)
+  }
+}))
+```
+
+**Configuration options:**
+- `useInMemoryCache` (boolean): Set to `true` to enable the in-memory cache layer. Default: `false`
+- `inMemoryCacheTTL` (number): Time-to-live for in-memory cached tokens in milliseconds. Default: `60000` (60 seconds)
+
+**How it works:**
+- On first token request: Fetches from IDP → stores in both Redis and memory
+- On subsequent requests: Checks memory first → if expired, checks Redis → if not in Redis, fetches from IDP
+- When cache is cleared: Both memory and Redis caches are cleared
 
 ### Custom TTL
 If you want to customize the TTL for tokens based on the `expiresIn` value from the OIDC response, you can provide a custom function.
