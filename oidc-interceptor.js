@@ -56,12 +56,9 @@ function createOidcInterceptor (options) {
   if (!clientId) throw new Error('No clientId provided')
 
   const refreshTokenPromises = new Map()
-  const requestingRefreshByScope = new Map()
-  function callRefreshToken (scopeOverride) {
-    const effectiveScope = scopeOverride !== undefined ? scopeOverride : scope
-    const scopeKey = effectiveScope || ''
-
-    if (requestingRefreshByScope.has(scopeKey)) return requestingRefreshByScope.get(scopeKey)
+  let _requestingRefresh
+  function callRefreshToken (tokenOpts) {
+    if (_requestingRefresh) return _requestingRefresh
 
     const tokenOptions = {
       idpTokenUrl,
@@ -69,12 +66,13 @@ function createOidcInterceptor (options) {
       clientId,
       clientSecret,
       contentType,
-      scope: effectiveScope,
+      scope,
       resource,
-      audience
+      audience,
+      ...tokenOpts
     }
 
-    const promise = store.token(tokenOptions)
+    _requestingRefresh = store.token(tokenOptions)
       .then(async (tokenPayload) => {
         const { accessToken: token } = tokenPayload
 
@@ -84,14 +82,14 @@ function createOidcInterceptor (options) {
         // If valid, return current token
         switch (getTokenState(token)) {
           case TOKEN_STATE.EXPIRED:
-            const optionsKey = stringify({ ...options, scope: effectiveScope })
+            const optionsKey = stringify(options)
             if (!refreshTokenPromises.has(optionsKey)) {
-              const refreshPromise = (async () => {
+              const promise = (async () => {
                 await store.clear(tokenOptions)
                 return await store.token(tokenOptions).then((tokenPayload) => tokenPayload.accessToken)
               })()
-              refreshTokenPromises.set(optionsKey, refreshPromise)
-              refreshPromise.finally(() => refreshTokenPromises.delete(optionsKey))
+              refreshTokenPromises.set(optionsKey, promise)
+              promise.finally(() => refreshTokenPromises.delete(optionsKey))
             }
 
             return await refreshTokenPromises.get(optionsKey)
@@ -103,14 +101,15 @@ function createOidcInterceptor (options) {
             return token
         }
       /* c8 ignore next */
-      }).finally(() => requestingRefreshByScope.delete(scopeKey))
+      }).finally(() => _requestingRefresh = null)
 
-    requestingRefreshByScope.set(scopeKey, promise)
-    return promise
+    return _requestingRefresh
   }
 
   return dispatch => {
     return function Intercept (opts, handler) {
+      const oidcScope = opts.oidc?.scope || scope
+
       if (shouldAuthenticate) {
         const shouldAuth = shouldAuthenticate(opts)
         if (!shouldAuth) {
@@ -119,11 +118,9 @@ function createOidcInterceptor (options) {
       } else if ((!opts.oauthRetry && !urls.includes(opts.origin)) || idpTokenUrl === `${opts.origin}${opts.path}`) {
         return dispatch(opts, handler)
       }
-      
-      const scopeOverride = opts.oauthScope
 
       if (opts.oauthRetry) {
-        return callRefreshToken(scopeOverride)
+        return callRefreshToken({ scope: oidcScope })
           .catch(err => {
             handler.onResponseError(handler, err)
           })
@@ -134,8 +131,7 @@ function createOidcInterceptor (options) {
       }
 
       if (!opts.headers) opts.headers = {}
-      // Only use global accessToken if no scope override is provided
-      if (!scopeOverride && accessToken && !opts.headers.authorization) {
+      if (accessToken && !opts.headers.authorization) {
         opts.headers.authorization = `Bearer ${accessToken}`
       }
 
@@ -144,7 +140,6 @@ function createOidcInterceptor (options) {
       const retryHandler = new RetryHandler({
         ...opts,
         oauthRetry: true,
-        oauthScope: scopeOverride,
         retryOptions: {
           statusCodes: retryOnStatusCodes,
           maxRetries: 1,
@@ -169,18 +164,9 @@ function createOidcInterceptor (options) {
         return dispatch(opts, retryHandler)
       }
 
-      // If scope override is provided, always fetch token for that scope
-      if (scopeOverride !== undefined) {
-        return callRefreshToken(scopeOverride)
-          .then(rebuildRequest)
-          .catch(err => {
-            handler.onResponseError(handler, err)
-          })
-      }
-
       switch (getTokenState(accessToken)) {
         case TOKEN_STATE.EXPIRED:
-          return callRefreshToken()
+          return callRefreshToken({ scope: oidcScope })
             .then(token => {
               accessToken = null // force using new token in next request
               return token
@@ -190,7 +176,7 @@ function createOidcInterceptor (options) {
               handler.onResponseError(handler, err)
             })
         case TOKEN_STATE.NEAR_EXPIRATION:
-          callRefreshToken()
+          callRefreshToken({ scope: oidcScope })
             .then(token => {
               accessToken = null // force using new token in next request
               dispatcher.emit('oauth:token-refreshed', token)

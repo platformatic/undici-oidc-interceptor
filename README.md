@@ -90,6 +90,33 @@ const dispatcher = new Agent().compose(createOidcInterceptor({
 
 > Note: `shouldAuthenticate` has higher priority than urls. Fallback to urls behavior when shouldAuthenticate is not provided
 
+## Per-request scope override
+
+You can override the default scope for individual requests:
+
+```js
+const { Agent, setGlobalDispatcher, request } = require('undici')
+const { createOidcInterceptor } = require('undici-oidc-interceptor')
+
+const agent = new Agent().compose(createOidcInterceptor({
+  clientId: 'FILLME',
+  clientSecret: 'FILLME',
+  idpTokenUrl: 'https://your-idp.com/token',
+  urls: ['https://api.example.com'],
+  scope: 'read write'
+}))
+
+setGlobalDispatcher(agent)
+
+// Uses default scope from interceptor config
+await request('https://api.example.com/resource')
+
+// Uses custom scope for this request
+await request('https://api.example.com/admin', {
+  oidc: { scope: 'admin' }
+})
+```
+
 ## Token store
 
 This interceptor uses the [async-cache-dedupe](https://github.com/mcollina/async-cache-dedupe) package to cache access tokens. This improves efficiency by enabling token reuse across processes or instances and avoids unnecessary token refresh requests.

@@ -251,7 +251,7 @@ test('scope override per request', async (t) => {
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, {
       dispatcher,
-      oauthScope: overrideScope
+      oidc: { scope: overrideScope }
     })
     plan.strictEqual(statusCode, 200)
   }
@@ -312,7 +312,7 @@ test('scope override caches tokens per scope', async (t) => {
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, {
       dispatcher,
-      oauthScope: scope1
+      oidc: { scope: scope1 }
     })
     plan.strictEqual(statusCode, 200)
   }
@@ -321,7 +321,7 @@ test('scope override caches tokens per scope', async (t) => {
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, {
       dispatcher,
-      oauthScope: scope2
+      oidc: { scope: scope2 }
     })
     plan.strictEqual(statusCode, 200)
   }
@@ -330,7 +330,7 @@ test('scope override caches tokens per scope', async (t) => {
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, {
       dispatcher,
-      oauthScope: scope1
+      oidc: { scope: scope1 }
     })
     plan.strictEqual(statusCode, 200)
   }
@@ -339,7 +339,7 @@ test('scope override caches tokens per scope', async (t) => {
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, {
       dispatcher,
-      oauthScope: scope2
+      oidc: { scope: scope2 }
     })
     plan.strictEqual(statusCode, 200)
   }
