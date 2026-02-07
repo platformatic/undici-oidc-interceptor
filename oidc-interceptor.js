@@ -57,7 +57,7 @@ function createOidcInterceptor (options) {
 
   const refreshTokenPromises = new Map()
   let _requestingRefresh
-  function callRefreshToken () {
+  function callRefreshToken (tokenOpts) {
     if (_requestingRefresh) return _requestingRefresh
 
     const tokenOptions = {
@@ -68,7 +68,8 @@ function createOidcInterceptor (options) {
       contentType,
       scope,
       resource,
-      audience
+      audience,
+      ...tokenOpts
     }
 
     _requestingRefresh = store.token(tokenOptions)
@@ -107,6 +108,8 @@ function createOidcInterceptor (options) {
 
   return dispatch => {
     return function Intercept (opts, handler) {
+      const oidcScope = opts.oidc?.scope || scope
+
       if (shouldAuthenticate) {
         const shouldAuth = shouldAuthenticate(opts)
         if (!shouldAuth) {
@@ -115,9 +118,9 @@ function createOidcInterceptor (options) {
       } else if ((!opts.oauthRetry && !urls.includes(opts.origin)) || idpTokenUrl === `${opts.origin}${opts.path}`) {
         return dispatch(opts, handler)
       }
-      
+
       if (opts.oauthRetry) {
-        return callRefreshToken()
+        return callRefreshToken({ scope: oidcScope })
           .catch(err => {
             handler.onResponseError(handler, err)
           })
@@ -163,7 +166,7 @@ function createOidcInterceptor (options) {
 
       switch (getTokenState(accessToken)) {
         case TOKEN_STATE.EXPIRED:
-          return callRefreshToken()
+          return callRefreshToken({ scope: oidcScope })
             .then(token => {
               accessToken = null // force using new token in next request
               return token
@@ -173,7 +176,7 @@ function createOidcInterceptor (options) {
               handler.onResponseError(handler, err)
             })
         case TOKEN_STATE.NEAR_EXPIRATION:
-          callRefreshToken()
+          callRefreshToken({ scope: oidcScope })
             .then(token => {
               accessToken = null // force using new token in next request
               dispatcher.emit('oauth:token-refreshed', token)
