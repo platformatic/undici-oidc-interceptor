@@ -4,8 +4,10 @@
   "description": "Automatically manage OIDC access tokens for Undici requests",
   "main": "oidc-interceptor.js",
   "scripts": {
-    "lint": "standard",
-    "test": "borp --coverage",
+    "lint": "eslint --cache",
+    "test": "c8 -c tests/config/c8-local.json node --test --test-reporter=cleaner-spec-reporter tests/*.test.js",
+    "test:ci": "c8 -c tests/config/c8-ci.json node --test --test-reporter=cleaner-spec-reporter tests/*.test.js",
+    "ci": "npm run lint && npm run test:ci",
     "redis": "docker run --rm -d -p 6379:6379 redis redis-server"
   },
   "author": "Platformatic",
@@ -16,14 +18,15 @@
     "undici": "^7.0.0"
   },
   "devDependencies": {
-    "@matteo.collina/tspl": "^0.2.0",
-    "borp": "^1.0.0",
+    "c8": "^10.1.3",
+    "cleaner-spec-reporter": "^1.0.3",
+    "eslint": "^9.39.2",
     "fast-querystring": "^1.1.2",
     "fastify": "^5.0.0",
     "get-jwks": "^11.0.0",
     "ioredis": "^5.7.0",
     "jwks": "^1.0.0",
-    "oidc-provider": "^9.0.0",
-    "standard": "^17.1.0"
+    "neostandard": "^0.12.2",
+    "oidc-provider": "^9.0.0"
   }
 }

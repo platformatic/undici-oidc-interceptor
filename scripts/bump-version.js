@@ -2,9 +2,9 @@
 
 import { execSync } from 'node:child_process'
 import { readFile, writeFile } from 'node:fs/promises'
-import { inc, } from 'semver'
+import { inc } from 'semver'
 
-function getUserInfo ()  {
+function getUserInfo () {
   const username = process.argv[3] ?? process.env.GITHUB_ACTOR
   const defaultUser = 'mcollina'
 
@@ -22,7 +22,7 @@ function getUserInfo ()  {
   return userInfo
 }
 
-async function getVersion (){
+async function getVersion () {
   const version = process.argv[2].replace(/^v/, '')
 
   if (['minor', 'major', 'patch'].includes(process.argv[2])) {
@@ -33,7 +33,7 @@ async function getVersion (){
   return version
 }
 
-async function updatePackageJson (version){
+async function updatePackageJson (version) {
   const packageJson = JSON.parse(await readFile('package.json', 'utf8'))
   packageJson.version = version
   await writeFile('package.json', JSON.stringify(packageJson, null, 2))

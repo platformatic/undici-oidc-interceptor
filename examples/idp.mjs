@@ -5,9 +5,9 @@ class MemoryAdapter {}
 const port = process.env.PORT || 3001
 
 const config = {
-  ttl: { 
-    ClientCredentials(ctx, token, client) {
-      return token.resourceServer?.accessTokenTTL || 10 * 60;
+  ttl: {
+    ClientCredentials (ctx, token, client) {
+      return token.resourceServer?.accessTokenTTL || 10 * 60
     }
   },
   clients: [
@@ -17,8 +17,8 @@ const config = {
       token_endpoint_auth_method: 'client_secret_post',
       grant_types: ['client_credentials'],
       redirect_uris: [],
-      response_types: [],
-    },
+      response_types: []
+    }
   ],
   cookies: {
     keys: ['mysecret123']
@@ -38,39 +38,39 @@ const config = {
         p: '5wC6nY6Ev5FqcLPCqn9fC6R9KUuBej6NaAVOKW7GXiOJAq2WrileGKfMc9kIny20zW3uWkRLm-O-3Yzze1zFpxmqvsvCxZ5ERVZ6leiNXSu3tez71ZZwp0O9gys4knjrI-9w46l_vFuRtjL6XEeFfHEZFaNJpz-lcnb3w0okrbM',
         q: '3I1qeEDslZFB8iNfpKAdWtz_Wzm6-jayT_V6aIvhvMj5mnU-Xpj75zLPQSGa9wunMlOoZW9w1wDO1FVuDhwzeOJaTm-Ds0MezeC4U6nVGyyDHb4CUA3ml2tzt4yLrqGYMT7XbADSvuWYADHw79OFjEi4T3s3tJymhaBvy1ulv8M',
         qi: 'wSbXte9PcPtr788e713KHQ4waE26CzoXx-JNOgN0iqJMN6C4_XJEX-cSvCZDf4rh7xpXN6SGLVd5ibIyDJi7bbi5EQ5AXjazPbLBjRthcGXsIuZ3AtQyR0CEWNSdM7EyM5TRdyZQ9kftfz9nI03guW3iKKASETqX2vh0Z8XRjyU',
-        use: 'sig',
+        use: 'sig'
       }, {
         crv: 'P-256',
         d: 'K9xfPv773dZR22TVUB80xouzdF7qCg5cWjPjkHyv7Ws',
         kty: 'EC',
         use: 'sig',
         x: 'FWZ9rSkLt6Dx9E3pxLybhdM6xgR5obGsj5_pqmnz5J4',
-        y: '_n8G69C-A2Xl4xUW2lF0i8ZGZnk_KPYrhv4GbTGu5G4',
-      },
-    ],
+        y: '_n8G69C-A2Xl4xUW2lF0i8ZGZnk_KPYrhv4GbTGu5G4'
+      }
+    ]
   },
   features: {
     devInteractions: { enabled: false },
     clientCredentials: {
-      enabled: true,
+      enabled: true
     },
     resourceIndicators: {
       defaultResource () {
-        return 'urn:example:foo';
+        return 'urn:example:foo'
       },
-      getResourceServerInfo() {
+      getResourceServerInfo () {
         return {
           scope: 'api:read',
           accessTokenFormat: 'jwt',
-          accessTokenTTL: 50,
+          accessTokenTTL: 50
         }
-      },
+      }
     }
   }
 }
 const provider = new Provider(`http://localhost:${port}`, config)
-const server = await new Promise((resolve) => {
+await new Promise((resolve) => {
   const s = provider.listen(port, () => {
     resolve(s)
   })
-});
+})

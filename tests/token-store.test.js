@@ -10,11 +10,11 @@ const mockAgent = new MockAgent()
 setGlobalDispatcher(mockAgent)
 mockAgent.disableNetConnect()
 
-const redisClient = new Redis('redis://localhost:6379')
+const redisClient = new Redis('redis://localhost:6379?db=1')
 
 describe('cache store', async () => {
   before(async () => {
-    await redisClient.flushall()
+    await redisClient.flushdb()
   })
 
   after(async () => {
@@ -45,7 +45,7 @@ describe('cache store', async () => {
 
   describe('token', async () => {
     afterEach(async () => {
-      await redisClient.flushall()
+      await redisClient.flushdb()
     })
 
     test('retrieve token with key serialization', async (t) => {
@@ -143,7 +143,7 @@ describe('cache store', async () => {
         serialize: (key) => key.clientId,
         onMiss: (key) => {
           requestCount++
-          if (requestCount == 1) {
+          if (requestCount === 1) {
             assert.equal(key, 'client-id')
           } else {
             assert.equal(key, 'client-id-2')

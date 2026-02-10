@@ -3,9 +3,7 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const http = require('node:http')
-const { once, EventEmitter } = require('node:events')
 const { request, Agent } = require('undici')
-const { createDecoder } = require('fast-jwt')
 const { createOidcInterceptor } = require('../')
 const { createToken } = require('./helper')
 
