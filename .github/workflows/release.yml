@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Bump Version
-        run: node scripts/bump-version.js "${{ inputs.version }}" "${{ github.actor }}"
+        run: node scripts/bump-version.mjs "${{ inputs.version }}" "${{ github.actor }}"
         env:
           GITHUB_ACTIONS: "true"
       - name: Push changes
