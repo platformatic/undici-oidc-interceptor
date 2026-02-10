@@ -1,6 +1,5 @@
 'use strict'
 
-const { strictEqual, deepStrictEqual, ok } = require('assert')
 const test = require('node:test')
 const http = require('node:http')
 const { request, Agent } = require('undici')
@@ -9,12 +8,13 @@ const { createToken } = require('./helper')
 const qs = require('fast-querystring')
 
 test('scope', async (t) => {
+  const plan = t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedScope = 'what a scope'
 
   const mainServer = http.createServer((req, res) => {
-    ok(req.headers.authorization.length > 'Bearer '.length)
-    strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
+    t.assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    t.assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
 
     res.writeHead(200)
     res.end()
@@ -22,17 +22,17 @@ test('scope', async (t) => {
   mainServer.listen(0)
 
   const tokenServer = http.createServer((req, res) => {
-    strictEqual(req.method, 'POST')
-    strictEqual(req.url, '/token')
+    t.assert.strictEqual(req.method, 'POST')
+    t.assert.strictEqual(req.url, '/token')
 
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
       const { grant_type, client_id, client_secret, scope } = Object.fromEntries(new URLSearchParams(body))
-      strictEqual(grant_type, 'client_credentials')
-      strictEqual(client_id, 'client-id')
-      strictEqual(client_secret, 'client-secret')
-      strictEqual(scope, expectedScope)
+      t.assert.strictEqual(grant_type, 'client_credentials')
+      t.assert.strictEqual(client_id, 'client-id')
+      t.assert.strictEqual(client_secret, 'client-secret')
+      t.assert.strictEqual(scope, expectedScope)
     })
 
     res.writeHead(200)
@@ -61,17 +61,18 @@ test('scope', async (t) => {
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 })
 
 test('resource', async (t) => {
+  const plan = t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedResource = 'what a resource'
 
   const mainServer = http.createServer((req, res) => {
-    ok(req.headers.authorization.length > 'Bearer '.length)
-    strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
+    t.assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    t.assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
 
     res.writeHead(200)
     res.end()
@@ -79,17 +80,17 @@ test('resource', async (t) => {
   mainServer.listen(0)
 
   const tokenServer = http.createServer((req, res) => {
-    strictEqual(req.method, 'POST')
-    strictEqual(req.url, '/token')
+    t.assert.strictEqual(req.method, 'POST')
+    t.assert.strictEqual(req.url, '/token')
 
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
       const { grant_type, client_id, client_secret, resource } = Object.fromEntries(new URLSearchParams(body))
-      strictEqual(grant_type, 'client_credentials')
-      strictEqual(client_id, 'client-id')
-      strictEqual(client_secret, 'client-secret')
-      strictEqual(resource, expectedResource)
+      t.assert.strictEqual(grant_type, 'client_credentials')
+      t.assert.strictEqual(client_id, 'client-id')
+      t.assert.strictEqual(client_secret, 'client-secret')
+      t.assert.strictEqual(resource, expectedResource)
     })
 
     res.writeHead(200)
@@ -118,18 +119,19 @@ test('resource', async (t) => {
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 })
 
 // Audience is Auth0 specific
 test('audience', async (t) => {
+  const plan = t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedAudience = 'what an audience'
 
   const mainServer = http.createServer((req, res) => {
-    ok(req.headers.authorization.length > 'Bearer '.length)
-    strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
+    t.assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    t.assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
 
     res.writeHead(200)
     res.end()
@@ -137,17 +139,17 @@ test('audience', async (t) => {
   mainServer.listen(0)
 
   const tokenServer = http.createServer((req, res) => {
-    strictEqual(req.method, 'POST')
-    strictEqual(req.url, '/token')
+    t.assert.strictEqual(req.method, 'POST')
+    t.assert.strictEqual(req.url, '/token')
 
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
       const { grant_type, client_id, client_secret, audience} = Object.fromEntries(new URLSearchParams(body))
-      strictEqual(grant_type, 'client_credentials')
-      strictEqual(client_id, 'client-id')
-      strictEqual(client_secret, 'client-secret')
-      strictEqual(audience, expectedAudience)
+      t.assert.strictEqual(grant_type, 'client_credentials')
+      t.assert.strictEqual(client_id, 'client-id')
+      t.assert.strictEqual(client_secret, 'client-secret')
+      t.assert.strictEqual(audience, expectedAudience)
     })
 
     res.writeHead(200)
@@ -176,11 +178,12 @@ test('audience', async (t) => {
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 })
 
 test('scope override per request', async (t) => {
+  const plan = t.plan(13)
   const defaultScopeToken = createToken({ name: 'default-scope' }, { expiresIn: '1d' })
   const overrideScopeToken = createToken({ name: 'override-scope' }, { expiresIn: '1d' })
   const defaultScope = 'read write'
@@ -189,11 +192,11 @@ test('scope override per request', async (t) => {
   let requestCount = 0
   const mainServer = http.createServer((req, res) => {
     requestCount++
-    ok(req.headers.authorization.length > 'Bearer '.length)
+    t.assert.ok(req.headers.authorization.length > 'Bearer '.length)
     if (requestCount === 1) {
-      strictEqual(req.headers.authorization, `Bearer ${defaultScopeToken}`, 'first request should use default scope token')
+      t.assert.strictEqual(req.headers.authorization, `Bearer ${defaultScopeToken}`, 'first request should use default scope token')
     } else {
-      strictEqual(req.headers.authorization, `Bearer ${overrideScopeToken}`, 'second request should use override scope token')
+      t.assert.strictEqual(req.headers.authorization, `Bearer ${overrideScopeToken}`, 'second request should use override scope token')
     }
     res.writeHead(200)
     res.end()
@@ -203,19 +206,19 @@ test('scope override per request', async (t) => {
   let tokenRequestCount = 0
   const tokenServer = http.createServer((req, res) => {
     tokenRequestCount++
-    strictEqual(req.method, 'POST')
-    strictEqual(req.url, '/token')
+    t.assert.strictEqual(req.method, 'POST')
+    t.assert.strictEqual(req.url, '/token')
 
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
       const { scope } = Object.fromEntries(new URLSearchParams(body))
       if (tokenRequestCount === 1) {
-        strictEqual(scope, defaultScope, 'first token request should use default scope')
+        t.assert.strictEqual(scope, defaultScope, 'first token request should use default scope')
         res.writeHead(200)
         res.end(JSON.stringify({ access_token: defaultScopeToken }))
       } else {
-        strictEqual(scope, overrideScope, 'second token request should use override scope')
+        t.assert.strictEqual(scope, overrideScope, 'second token request should use override scope')
         res.writeHead(200)
         res.end(JSON.stringify({ access_token: overrideScopeToken }))
       }
@@ -240,7 +243,7 @@ test('scope override per request', async (t) => {
   // First request uses default scope
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 
   // Second request uses override scope
@@ -249,13 +252,14 @@ test('scope override per request', async (t) => {
       dispatcher,
       oidc: { scope: overrideScope }
     })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 
-  strictEqual(tokenRequestCount, 2, 'should have made 2 token requests')
+  t.assert.strictEqual(tokenRequestCount, 2, 'should have made 2 token requests')
 })
 
 test('scope override caches tokens per scope', async (t) => {
+  const plan = t.plan(10)
   const scope1Token = createToken({ name: 'scope1' }, { expiresIn: '1d' })
   const scope2Token = createToken({ name: 'scope2' }, { expiresIn: '1d' })
   const scope1 = 'scope1'
@@ -264,7 +268,7 @@ test('scope override caches tokens per scope', async (t) => {
   let requestCount = 0
   const mainServer = http.createServer((req, res) => {
     requestCount++
-    ok(req.headers.authorization.length > 'Bearer '.length)
+    t.assert.ok(req.headers.authorization.length > 'Bearer '.length)
     res.writeHead(200)
     res.end()
   })
@@ -309,7 +313,7 @@ test('scope override caches tokens per scope', async (t) => {
       dispatcher,
       oidc: { scope: scope1 }
     })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 
   // Request with scope2
@@ -318,7 +322,7 @@ test('scope override caches tokens per scope', async (t) => {
       dispatcher,
       oidc: { scope: scope2 }
     })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 
   // Request with scope1 again - should use cached token
@@ -327,7 +331,7 @@ test('scope override caches tokens per scope', async (t) => {
       dispatcher,
       oidc: { scope: scope1 }
     })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 
   // Request with scope2 again - should use cached token
@@ -336,20 +340,21 @@ test('scope override caches tokens per scope', async (t) => {
       dispatcher,
       oidc: { scope: scope2 }
     })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 
-  strictEqual(tokenRequestCount, 2, 'should only have made 2 token requests (one per unique scope)')
-  strictEqual(requestCount, 4, 'should have made 4 main requests')
+  t.assert.strictEqual(tokenRequestCount, 2, 'should only have made 2 token requests (one per unique scope)')
+  t.assert.strictEqual(requestCount, 4, 'should have made 4 main requests')
 })
 
 test('multiple resources', async (t) => {
+  const plan = t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedResources = ['r1', 'r2']
 
   const mainServer = http.createServer((req, res) => {
-    ok(req.headers.authorization.length > 'Bearer '.length)
-    strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
+    t.assert.ok(req.headers.authorization.length > 'Bearer '.length)
+    t.assert.strictEqual(req.headers.authorization, `Bearer ${newAccessToken}`, 'token should be the new one in second request')
 
     res.writeHead(200)
     res.end()
@@ -357,17 +362,17 @@ test('multiple resources', async (t) => {
   mainServer.listen(0)
 
   const tokenServer = http.createServer((req, res) => {
-    strictEqual(req.method, 'POST')
-    strictEqual(req.url, '/token')
+    t.assert.strictEqual(req.method, 'POST')
+    t.assert.strictEqual(req.url, '/token')
 
     let body = ''
     req.on('data', chunk => body += chunk)
     req.on('end', () => {
       const { grant_type, client_id, client_secret, resource } = qs.parse(body)
-      strictEqual(grant_type, 'client_credentials')
-      strictEqual(client_id, 'client-id')
-      strictEqual(client_secret, 'client-secret')
-      deepStrictEqual(resource, expectedResources)
+      t.assert.strictEqual(grant_type, 'client_credentials')
+      t.assert.strictEqual(client_id, 'client-id')
+      t.assert.strictEqual(client_secret, 'client-secret')
+      t.assert.deepStrictEqual(resource, expectedResources)
     })
 
     res.writeHead(200)
@@ -396,6 +401,6 @@ test('multiple resources', async (t) => {
 
   {
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
-    strictEqual(statusCode, 200)
+    t.assert.strictEqual(statusCode, 200)
   }
 })
