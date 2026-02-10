@@ -13,7 +13,7 @@ const redisClient = new Redis()
 
 describe('interceptor cache store', async () => {
   beforeEach(async () => {
-    await redisClient.flushall()
+    await redisClient.flushdb()
   })
 
   after(async () => {

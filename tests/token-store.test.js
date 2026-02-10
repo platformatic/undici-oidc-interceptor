@@ -10,11 +10,11 @@ const mockAgent = new MockAgent()
 setGlobalDispatcher(mockAgent)
 mockAgent.disableNetConnect()
 
-const redisClient = new Redis('redis://localhost:6379')
+const redisClient = new Redis('redis://localhost:6379?db=1')
 
 describe('cache store', async () => {
   before(async () => {
-    await redisClient.flushall()
+    await redisClient.flushdb()
   })
 
   after(async () => {
