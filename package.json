@@ -5,8 +5,8 @@
   "main": "oidc-interceptor.js",
   "scripts": {
     "lint": "eslint --cache",
-    "test": "c8 -c tests/config/c8-local.json node --test --test-reporter=cleaner-spec-reporter 'tests/*.test.js'",
-    "test:ci": "c8 -c tests/config/c8-ci.json node --test --test-reporter=cleaner-spec-reporter 'tests/*.test.js'",
+    "test": "c8 -c tests/config/c8-local.json node --test --test-reporter=cleaner-spec-reporter tests/*.test.js",
+    "test:ci": "c8 -c tests/config/c8-ci.json node --test --test-reporter=cleaner-spec-reporter tests/*.test.js",
     "ci": "npm run lint && npm run test:ci",
     "redis": "docker run --rm -d -p 6379:6379 redis redis-server"
   },
