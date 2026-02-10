@@ -3,6 +3,10 @@
   "version": "0.8.0",
   "description": "Automatically manage OIDC access tokens for Undici requests",
   "main": "oidc-interceptor.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/platformatic/undici-oidc-interceptor.git"
+  },
   "scripts": {
     "lint": "eslint --cache",
     "test": "c8 -c tests/config/c8-local.json node --test --test-reporter=cleaner-spec-reporter tests/*.test.js",
