@@ -5,7 +5,6 @@ const assert = require('node:assert')
 const http = require('node:http')
 const { once, EventEmitter } = require('node:events')
 const { request, Agent } = require('undici')
-const { createDecoder } = require('fast-jwt')
 const { createOidcInterceptor } = require('../')
 const { createToken } = require('./helper')
 
@@ -142,7 +141,9 @@ test('refresh token within refresh window', async (t) => {
     assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => {
+      body += chunk
+    })
     req.on('end', () => {
       const { grant_type } = Object.fromEntries(new URLSearchParams(body))
       assert.strictEqual(grant_type, 'refresh_token')
@@ -160,7 +161,7 @@ test('refresh token within refresh window', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d'}
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent().compose(createOidcInterceptor({
@@ -181,7 +182,7 @@ test('refresh token within refresh window', async (t) => {
 })
 
 test('do not refresh just outside of refresh window', async (t) => {
-  let accessToken = createToken({ name: 'access' }, { expiresIn: '40s' }) // 10s outside of refresh window
+  const accessToken = createToken({ name: 'access' }, { expiresIn: '40s' }) // 10s outside of refresh window
 
   const mainServer = http.createServer((req, res) => {
     assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -203,7 +204,7 @@ test('do not refresh just outside of refresh window', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d'}
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent().compose(createOidcInterceptor({
@@ -257,7 +258,7 @@ test('refresh access token if server rejects, retry request', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d'}
+    { expiresIn: '1d' }
   )
 
   const dispatcher = new Agent().compose(createOidcInterceptor({
@@ -303,7 +304,7 @@ test('do not intercept request', async (t) => {
 
   const refreshToken = createToken(
     { name: 'refresh' },
-    { expiresIn: '1d'}
+    { expiresIn: '1d' }
   )
   const dispatcher = new Agent().compose(createOidcInterceptor({
     accessToken,
@@ -397,7 +398,7 @@ test('token created only once', async (t) => {
     refreshToken,
     urls: [`http://localhost:${mainServer.address().port}`],
     idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-    clientId: 'client-id' 
+    clientId: 'client-id'
   }))
 
   const results = await Promise.all([
@@ -416,10 +417,8 @@ test('token created only once', async (t) => {
 test('only retries on provided status codes', async (t) => {
   let accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
 
-  let requestCount = 0
   let rejectRequest = true
   const mainServer = http.createServer((req, res) => {
-    requestCount += 1
     if (rejectRequest) {
       rejectRequest = false
       res.writeHead(403)
@@ -466,11 +465,9 @@ test('only retries on provided status codes', async (t) => {
 })
 
 test('error handling on creation', async (t) => {
-  {
-    assert.throws(() => {
-      new Agent().compose(createOidcInterceptor({ refreshToken: '' }))
-    }, { message: 'No idpTokenUrl provided' })
-  }
+  assert.throws(() => {
+    new Agent().compose(createOidcInterceptor({ refreshToken: '' }))
+  }, { message: 'No idpTokenUrl provided' })
 
   {
     const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d' })
@@ -511,7 +508,9 @@ test('optimistic refresh', async (t) => {
     assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => {
+      body += chunk
+    })
     req.on('end', () => {
       const { grant_type, refresh_token } = Object.fromEntries(new URLSearchParams(body))
       assert.strictEqual(grant_type, 'refresh_token')

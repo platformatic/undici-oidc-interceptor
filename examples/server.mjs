@@ -3,11 +3,11 @@ import buildGetJwks from 'get-jwks'
 import { createVerifier } from 'fast-jwt'
 
 const jwks = buildGetJwks({
-  jwksPath: '/jwks',
+  jwksPath: '/jwks'
 })
 
 const port = 3002
-const idp = `http://localhost:3001/`
+const idp = 'http://localhost:3001/'
 
 const getKey = ({ header }) => jwks.getPublicKey({ domain: idp, kid: header.kid, alg: header.alg })
 

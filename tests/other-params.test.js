@@ -8,7 +8,7 @@ const { createToken } = require('./helper')
 const qs = require('fast-querystring')
 
 test('scope', async (t) => {
-  const plan = t.plan(9)
+  t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedScope = 'what a scope'
 
@@ -26,7 +26,7 @@ test('scope', async (t) => {
     t.assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => { body += chunk })
     req.on('end', () => {
       const { grant_type, client_id, client_secret, scope } = Object.fromEntries(new URLSearchParams(body))
       t.assert.strictEqual(grant_type, 'client_credentials')
@@ -45,7 +45,7 @@ test('scope', async (t) => {
     tokenServer.close()
   })
 
-  const refreshToken = createToken(
+  createToken(
     { name: 'refresh' },
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
@@ -66,7 +66,7 @@ test('scope', async (t) => {
 })
 
 test('resource', async (t) => {
-  const plan = t.plan(9)
+  t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedResource = 'what a resource'
 
@@ -84,7 +84,7 @@ test('resource', async (t) => {
     t.assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => { body += chunk })
     req.on('end', () => {
       const { grant_type, client_id, client_secret, resource } = Object.fromEntries(new URLSearchParams(body))
       t.assert.strictEqual(grant_type, 'client_credentials')
@@ -103,7 +103,7 @@ test('resource', async (t) => {
     tokenServer.close()
   })
 
-  const refreshToken = createToken(
+  createToken(
     { name: 'refresh' },
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
@@ -125,7 +125,7 @@ test('resource', async (t) => {
 
 // Audience is Auth0 specific
 test('audience', async (t) => {
-  const plan = t.plan(9)
+  t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedAudience = 'what an audience'
 
@@ -143,9 +143,9 @@ test('audience', async (t) => {
     t.assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => { body += chunk })
     req.on('end', () => {
-      const { grant_type, client_id, client_secret, audience} = Object.fromEntries(new URLSearchParams(body))
+      const { grant_type, client_id, client_secret, audience } = Object.fromEntries(new URLSearchParams(body))
       t.assert.strictEqual(grant_type, 'client_credentials')
       t.assert.strictEqual(client_id, 'client-id')
       t.assert.strictEqual(client_secret, 'client-secret')
@@ -162,7 +162,7 @@ test('audience', async (t) => {
     tokenServer.close()
   })
 
-  const refreshToken = createToken(
+  createToken(
     { name: 'refresh' },
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )
@@ -183,7 +183,7 @@ test('audience', async (t) => {
 })
 
 test('scope override per request', async (t) => {
-  const plan = t.plan(13)
+  t.plan(13)
   const defaultScopeToken = createToken({ name: 'default-scope' }, { expiresIn: '1d' })
   const overrideScopeToken = createToken({ name: 'override-scope' }, { expiresIn: '1d' })
   const defaultScope = 'read write'
@@ -210,7 +210,7 @@ test('scope override per request', async (t) => {
     t.assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => { body += chunk })
     req.on('end', () => {
       const { scope } = Object.fromEntries(new URLSearchParams(body))
       if (tokenRequestCount === 1) {
@@ -259,7 +259,7 @@ test('scope override per request', async (t) => {
 })
 
 test('scope override caches tokens per scope', async (t) => {
-  const plan = t.plan(10)
+  t.plan(10)
   const scope1Token = createToken({ name: 'scope1' }, { expiresIn: '1d' })
   const scope2Token = createToken({ name: 'scope2' }, { expiresIn: '1d' })
   const scope1 = 'scope1'
@@ -278,7 +278,7 @@ test('scope override caches tokens per scope', async (t) => {
   const scopeToToken = {}
   const tokenServer = http.createServer((req, res) => {
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => { body += chunk })
     req.on('end', () => {
       const { scope } = Object.fromEntries(new URLSearchParams(body))
 
@@ -348,7 +348,7 @@ test('scope override caches tokens per scope', async (t) => {
 })
 
 test('multiple resources', async (t) => {
-  const plan = t.plan(9)
+  t.plan(9)
   const newAccessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
   const expectedResources = ['r1', 'r2']
 
@@ -366,7 +366,7 @@ test('multiple resources', async (t) => {
     t.assert.strictEqual(req.url, '/token')
 
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', chunk => { body += chunk })
     req.on('end', () => {
       const { grant_type, client_id, client_secret, resource } = qs.parse(body)
       t.assert.strictEqual(grant_type, 'client_credentials')
@@ -385,7 +385,7 @@ test('multiple resources', async (t) => {
     tokenServer.close()
   })
 
-  const refreshToken = createToken(
+  createToken(
     { name: 'refresh' },
     { expiresIn: '1d', iss: `http://localhost:${tokenServer.address().port}`, sub: 'client-id' }
   )

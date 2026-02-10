@@ -81,7 +81,7 @@ function createOidcInterceptor (options) {
         // If near expiration, clear the cache but return current token
         // If valid, return current token
         switch (getTokenState(token)) {
-          case TOKEN_STATE.EXPIRED:
+          case TOKEN_STATE.EXPIRED: {
             const optionsKey = stringify(options)
             if (!refreshTokenPromises.has(optionsKey)) {
               const promise = (async () => {
@@ -93,6 +93,7 @@ function createOidcInterceptor (options) {
             }
 
             return await refreshTokenPromises.get(optionsKey)
+          }
           case TOKEN_STATE.NEAR_EXPIRATION:
             // trigger refresh but return current token
             store.clear(tokenOptions).catch(() => { /* do nothing */ })
@@ -101,7 +102,9 @@ function createOidcInterceptor (options) {
             return token
         }
       /* c8 ignore next */
-      }).finally(() => _requestingRefresh = null)
+      }).finally(() => {
+        _requestingRefresh = null
+      })
 
     return _requestingRefresh
   }
@@ -182,6 +185,7 @@ function createOidcInterceptor (options) {
               dispatcher.emit('oauth:token-refreshed', token)
             })
             .catch(/* do nothing */)
+        /* eslint-disable-next-line no-fallthrough */
         default:
           return dispatch(opts, retryHandler)
       }

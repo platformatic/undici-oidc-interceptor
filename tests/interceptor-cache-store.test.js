@@ -1,6 +1,6 @@
 'use strict'
 
-const { test, describe, before, after, afterEach, beforeEach } = require('node:test')
+const { test, describe, after, beforeEach } = require('node:test')
 const assert = require('node:assert')
 const Redis = require('ioredis')
 const http = require('node:http')
@@ -20,7 +20,7 @@ describe('interceptor cache store', async () => {
     redisClient.quit()
   })
 
-  test('create an access token and store it in cache', async (t) => {
+  test('create an access token and store it in cache', async t => {
     let accessToken = ''
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -45,23 +45,21 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-
-    const dispatcher = new Agent().compose(createOidcInterceptor({
-      retryOnStatusCodes: [401],
-      clientId: 'client-id',
-      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-      urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: {
-        ttl: 100,
-        storage: { type: 'memory' }
-      }
-    }))
+    const dispatcher = new Agent().compose(
+      createOidcInterceptor({
+        retryOnStatusCodes: [401],
+        clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        urls: [`http://localhost:${mainServer.address().port}`],
+        tokenStore: { ttl: 100, storage: { type: 'memory' } }
+      })
+    )
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)
   })
 
-  test('create an access token and store it in redis cache', async (t) => {
+  test('create an access token and store it in redis cache', async t => {
     let accessToken = ''
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -86,25 +84,27 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const dispatcher = new Agent().compose(createOidcInterceptor({
-      retryOnStatusCodes: [401],
-      clientId: 'client-id',
-      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-      urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: {
-        name: 'test-cache',
-        ttl: 100,
-        storage: { type: 'redis', options: { client: redisClient } },
-        serialize: (key) => key.clientId
-      }
-    }))
+    const dispatcher = new Agent().compose(
+      createOidcInterceptor({
+        retryOnStatusCodes: [401],
+        clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        urls: [`http://localhost:${mainServer.address().port}`],
+        tokenStore: {
+          name: 'test-cache',
+          ttl: 100,
+          storage: { type: 'redis', options: { client: redisClient } },
+          serialize: key => key.clientId
+        }
+      })
+    )
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)
-    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), {accessToken})
+    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), { accessToken })
   })
 
-  test('regenerate access token as the store cache is expiried', async (t) => {
+  test('regenerate access token as the store cache is expiried', async t => {
     let accessToken = ''
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -129,24 +129,26 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const dispatcher = new Agent().compose(createOidcInterceptor({
-      retryOnStatusCodes: [401],
-      clientId: 'client-id',
-      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-      urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: {
-        name: 'test-cache',
-        ttl: 1,
-        storage: { type: 'redis', options: { client: redisClient } },
-        serialize: (key) => key.clientId
-      }
-    }))
+    const dispatcher = new Agent().compose(
+      createOidcInterceptor({
+        retryOnStatusCodes: [401],
+        clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        urls: [`http://localhost:${mainServer.address().port}`],
+        tokenStore: {
+          name: 'test-cache',
+          ttl: 1,
+          storage: { type: 'redis', options: { client: redisClient } },
+          serialize: key => key.clientId
+        }
+      })
+    )
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     const oldAccessToken = accessToken
 
     assert.strictEqual(statusCode, 200)
-    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), {accessToken: oldAccessToken})
+    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), { accessToken: oldAccessToken })
 
     await sleep(1000)
     assert.strictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), null)
@@ -155,11 +157,11 @@ describe('interceptor cache store', async () => {
     const newAccessToken = accessToken
 
     assert.strictEqual(statusCode2, 200)
-    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), {accessToken: newAccessToken})
+    assert.deepStrictEqual(JSON.parse(await redisClient.get('test-cache~client-id')), { accessToken: newAccessToken })
     assert.notStrictEqual(oldAccessToken, newAccessToken)
   })
 
-  test('should invalidate access token after fetching from cache', async (t) => {
+  test('should invalidate access token after fetching from cache', async t => {
     let accessToken = ''
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -185,18 +187,20 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const dispatcher = new Agent().compose(createOidcInterceptor({
-      retryOnStatusCodes: [401],
-      clientId: 'client-id',
-      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-      urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: {
-        name: 'test-cache',
-        ttl: 1,
-        storage: { type: 'redis', options: { client: redisClient } },
-        serialize: (key) => key.clientId
-      }
-    }))
+    const dispatcher = new Agent().compose(
+      createOidcInterceptor({
+        retryOnStatusCodes: [401],
+        clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        urls: [`http://localhost:${mainServer.address().port}`],
+        tokenStore: {
+          name: 'test-cache',
+          ttl: 1,
+          storage: { type: 'redis', options: { client: redisClient } },
+          serialize: key => key.clientId
+        }
+      })
+    )
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)
@@ -209,7 +213,7 @@ describe('interceptor cache store', async () => {
     assert.strictEqual(tokenRequestCount, 2)
   })
 
-  test('should regenerate access token before expiration', async (t) => {
+  test('should regenerate access token before expiration', async t => {
     let accessToken = ''
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -235,26 +239,29 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const dispatcher = new Agent().compose(createOidcInterceptor({
-      retryOnStatusCodes: [401],
-      clientId: 'client-id',
-      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-      urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: {
-        name: 'test-cache',
-        ttl: 1,
-        storage: { type: 'redis', options: { client: redisClient } },
-        serialize: (key) => key.clientId
-      }
-    }))
+    const dispatcher = new Agent().compose(
+      createOidcInterceptor({
+        retryOnStatusCodes: [401],
+        clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        urls: [`http://localhost:${mainServer.address().port}`],
+        tokenStore: {
+          name: 'test-cache',
+          ttl: 1,
+          storage: { type: 'redis', options: { client: redisClient } },
+          serialize: key => key.clientId
+        }
+      })
+    )
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)
     assert.strictEqual(tokenRequestCount, 1)
   })
 
-  test('should regenerate access token after expiration and request with new token only', async (t) => {
-    const accessToken = ''; let oldAccessToken = ''; let newAccessToken = ''
+  test('should regenerate access token after expiration and request with new token only', async t => {
+    let oldAccessToken = ''
+    let newAccessToken = ''
     let tokenRequestCount = 0
     const mainServer = http.createServer((req, res) => {
       assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -286,18 +293,20 @@ describe('interceptor cache store', async () => {
       tokenServer.close()
     })
 
-    const dispatcher = new Agent().compose(createOidcInterceptor({
-      retryOnStatusCodes: [401],
-      clientId: 'client-id',
-      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-      urls: [`http://localhost:${mainServer.address().port}`],
-      tokenStore: {
-        name: 'test-cache',
-        ttl: 1,
-        storage: { type: 'redis', options: { client: redisClient } },
-        serialize: (key) => key.clientId
-      }
-    }))
+    const dispatcher = new Agent().compose(
+      createOidcInterceptor({
+        retryOnStatusCodes: [401],
+        clientId: 'client-id',
+        idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+        urls: [`http://localhost:${mainServer.address().port}`],
+        tokenStore: {
+          name: 'test-cache',
+          ttl: 1,
+          storage: { type: 'redis', options: { client: redisClient } },
+          serialize: key => key.clientId
+        }
+      })
+    )
 
     const { statusCode } = await request(`http://localhost:${mainServer.address().port}`, { dispatcher })
     assert.strictEqual(statusCode, 200)

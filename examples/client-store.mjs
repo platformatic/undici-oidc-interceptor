@@ -2,6 +2,8 @@ import Redis from 'ioredis'
 import { Agent, setGlobalDispatcher } from 'undici'
 import { createOidcInterceptor } from '../oidc-interceptor.js'
 
+const redisClient = new Redis()
+
 const dispatcher = new Agent().compose(createOidcInterceptor({
   // The paramerts for the cliend_credentials grant of OIDC
   clientId: 'foo',
@@ -19,11 +21,11 @@ const dispatcher = new Agent().compose(createOidcInterceptor({
   // Token caching configuration using async-cache-dedupe.
   tokenStore: {
     ttl: 100,
-    storage: { 
-      type: 'redis', 
-      options: { 
-        client: redisClient 
-      } 
+    storage: {
+      type: 'redis',
+      options: {
+        client: redisClient
+      }
     }
   }
 }))

@@ -3,16 +3,14 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const http = require('node:http')
-const { once, EventEmitter } = require('node:events')
 const { request, Agent, setGlobalDispatcher, getGlobalDispatcher } = require('undici')
-const { createDecoder } = require('fast-jwt')
 const { createOidcInterceptor } = require('../')
 const { createToken } = require('./helper')
 
 const originalGlobalDispatcher = getGlobalDispatcher()
 test.afterEach(() => setGlobalDispatcher(originalGlobalDispatcher))
 
-test('get an access token if no token provided', async (t) => {
+test('get an access token if no token provided', async t => {
   let accessToken = ''
   const mainServer = http.createServer((req, res) => {
     assert.ok(req.headers.authorization.length > 'Bearer '.length)
@@ -37,18 +35,17 @@ test('get an access token if no token provided', async (t) => {
     tokenServer.close()
   })
 
-  const refreshToken = createToken(
-    { name: 'refresh' },
-    { expiresIn: '1d' }
-  )
+  const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d' })
 
-  const dispatcher = new Agent().compose(createOidcInterceptor({
-    refreshToken,
-    retryOnStatusCodes: [401],
-    urls: [`http://localhost:${mainServer.address().port}`],
-    idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
-    clientId: 'client-id'
-  }))
+  const dispatcher = new Agent().compose(
+    createOidcInterceptor({
+      refreshToken,
+      retryOnStatusCodes: [401],
+      urls: [`http://localhost:${mainServer.address().port}`],
+      idpTokenUrl: `http://localhost:${tokenServer.address().port}/token`,
+      clientId: 'client-id'
+    })
+  )
 
   setGlobalDispatcher(dispatcher)
 
@@ -56,10 +53,10 @@ test('get an access token if no token provided', async (t) => {
   assert.strictEqual(statusCode, 200)
 })
 
-test('get an access token with the same origin as idpTokenUrl', async (t) => {
+test('get an access token with the same origin as idpTokenUrl', async t => {
   let accessToken = ''
   const server = http.createServer((req, res) => {
-    if(req.method === 'POST' && req.url === '/token') {
+    if (req.method === 'POST' && req.url === '/token') {
       accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
       res.writeHead(200)
       res.end(JSON.stringify({ access_token: accessToken }))
@@ -76,18 +73,17 @@ test('get an access token with the same origin as idpTokenUrl', async (t) => {
     server.close()
   })
 
-  const refreshToken = createToken(
-    { name: 'refresh' },
-    { expiresIn: '1d' }
-  )
+  const refreshToken = createToken({ name: 'refresh' }, { expiresIn: '1d' })
 
-  const dispatcher = new Agent().compose(createOidcInterceptor({
-    refreshToken,
-    retryOnStatusCodes: [401],
-    urls: [`http://localhost:${server.address().port}`],
-    idpTokenUrl: `http://localhost:${server.address().port}/token`,
-    clientId: 'client-id'
-  }))
+  const dispatcher = new Agent().compose(
+    createOidcInterceptor({
+      refreshToken,
+      retryOnStatusCodes: [401],
+      urls: [`http://localhost:${server.address().port}`],
+      idpTokenUrl: `http://localhost:${server.address().port}/token`,
+      clientId: 'client-id'
+    })
+  )
 
   setGlobalDispatcher(dispatcher)
 
