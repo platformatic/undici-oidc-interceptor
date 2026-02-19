@@ -47,7 +47,7 @@ importers:
         version: 0.12.2(@typescript-eslint/utils@8.55.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)
       oidc-provider:
         specifier: ^9.0.0
-        version: 9.6.0
+        version: 9.6.1
       semver:
         specifier: ^7.7.4
         version: 7.7.4
@@ -1367,8 +1367,8 @@ packages:
   obliterator@2.0.5:
     resolution: {integrity: sha512-42CPE9AhahZRsMNslczq0ctAEtqk8Eka26QofnqC346BZdHDySk3LWka23LI7ULIw11NmltpiLagIq8gBozxTw==}
 
-  oidc-provider@9.6.0:
-    resolution: {integrity: sha512-CCRUYPOumEy/DT+L86H40WgXjXfDHlsJYZdyd4ZKGFxJh/kAd7DxMX3dwpbX0g+WjB+NWU+kla1b/yZmHNcR0Q==}
+  oidc-provider@9.6.1:
+    resolution: {integrity: sha512-8AtFXE4gEV6MLd8Re78VhqGNjBm/SUw0fUxrP2XwQc+5DZKw6GyuTuy2M4jkidpH3jRrhtkkqQpXlxD1Awi6tg==}
 
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
@@ -3363,7 +3363,7 @@ snapshots:
 
   obliterator@2.0.5: {}
 
-  oidc-provider@9.6.0:
+  oidc-provider@9.6.1:
     dependencies:
       '@koa/cors': 5.0.0
       '@koa/router': 15.3.0(koa@3.1.1)
