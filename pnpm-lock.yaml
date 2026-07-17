@@ -47,7 +47,7 @@ importers:
         version: 0.13.0(eslint@9.39.5)(typescript@5.9.3)
       oidc-provider:
         specifier: ^9.0.0
-        version: 9.8.5
+        version: 9.9.1
       semver:
         specifier: ^7.7.4
         version: 7.8.5
@@ -158,8 +158,8 @@ packages:
     resolution: {integrity: sha512-x/iUDjcS90W69PryLDIMgFyV21YLTnG9zOpPXS7Bkt2b8AsY3zZsIpOLBkYr9fBcF3HbkKaER5hOBZLfpLgYNw==}
     engines: {node: '>= 14.0.0'}
 
-  '@koa/router@15.6.0':
-    resolution: {integrity: sha512-iEOXlvGIBqSNkGXrg0XtMARAOm5zA24oedXxiTGEkrD4JgwVjfRDddCQvW1s4WEcwDYvyecRbf8BikXsuEEj8w==}
+  '@koa/router@15.7.0':
+    resolution: {integrity: sha512-WaAlk4TOl/O0rhTpOR0l052gz03syPMmI6Pe2gd7v3ubjfv5UcSGcnb0Y/J5NNC/ln+5FiUqPJTc/a15I+XqAA==}
     engines: {node: '>= 20'}
     peerDependencies:
       koa: ^2.0.0 || ^3.0.0
@@ -885,8 +885,8 @@ packages:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
 
-  iconv-lite@0.7.2:
-    resolution: {integrity: sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==}
+  iconv-lite@0.7.3:
+    resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
   ignore@5.3.2:
@@ -1181,8 +1181,8 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  nanoid@5.1.14:
-    resolution: {integrity: sha512-5c8l8kVzqpnDPaicbEop/fV0Q1w16FmbWtVhMqugTozAwYdlIQojWH5a/M7UfziFmGdQRrUdV+EPzc9Xng3VAQ==}
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
 
@@ -1231,8 +1231,8 @@ packages:
   obliterator@2.0.5:
     resolution: {integrity: sha512-42CPE9AhahZRsMNslczq0ctAEtqk8Eka26QofnqC346BZdHDySk3LWka23LI7ULIw11NmltpiLagIq8gBozxTw==}
 
-  oidc-provider@9.8.5:
-    resolution: {integrity: sha512-07Wqkea8jdfPI8GvbVwf9rMNNitLUzzDqPua7hWbqZreFNpfnlNVdqmllaripVmgDZS2tHHLYQYLW0Ay7yux9w==}
+  oidc-provider@9.9.1:
+    resolution: {integrity: sha512-2kvtykfLu3FJSzaIStg8Dz58/pLtAwI3j/vLdy7KXJBDuJJAEgZhOSWklc+MTjKBLlQjeFwBXpKoE0Pf23pnIQ==}
 
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
@@ -1802,7 +1802,7 @@ snapshots:
     dependencies:
       vary: 1.1.2
 
-  '@koa/router@15.6.0(koa@3.2.1)':
+  '@koa/router@15.7.0(koa@3.2.1)':
     dependencies:
       debug: 4.4.3
       http-errors: 2.0.1
@@ -2743,7 +2743,7 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  iconv-lite@0.7.2:
+  iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
 
@@ -3055,7 +3055,7 @@ snapshots:
 
   ms@2.1.3: {}
 
-  nanoid@5.1.14: {}
+  nanoid@5.1.16: {}
 
   natural-compare@1.4.0: {}
 
@@ -3115,16 +3115,16 @@ snapshots:
 
   obliterator@2.0.5: {}
 
-  oidc-provider@9.8.5:
+  oidc-provider@9.9.1:
     dependencies:
       '@koa/cors': 5.0.0
-      '@koa/router': 15.6.0(koa@3.2.1)
+      '@koa/router': 15.7.0(koa@3.2.1)
       debug: 4.4.3
       eta: 4.6.0
       jose: 6.2.3
       jsesc: 3.1.0
       koa: 3.2.1
-      nanoid: 5.1.14
+      nanoid: 5.1.16
       quick-lru: 7.3.0
       raw-body: 3.0.2
     transitivePeerDependencies:
@@ -3234,7 +3234,7 @@ snapshots:
     dependencies:
       bytes: 3.1.2
       http-errors: 2.0.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       unpipe: 1.0.0
 
   react-is@16.13.1: {}
