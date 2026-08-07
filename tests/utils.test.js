@@ -58,3 +58,25 @@ test('refreshAccessToken() - success / json', async (t) => {
   })
   assert.deepStrictEqual(accessToken, { accessToken: 'new-access-token', expiresIn: undefined })
 })
+
+test('refreshAccessToken() - uses the provided dispatcher', async (t) => {
+  // The global dispatcher (net-disabled, no interceptor for this origin)
+  // would fail this request — succeeding proves the dispatcher option won.
+  const dispatcherAgent = new MockAgent()
+  dispatcherAgent.disableNetConnect()
+  dispatcherAgent.get('https://dispatcher-only.example.com').intercept({
+    method: 'POST',
+    path: '/token'
+  }).reply(200, {
+    access_token: 'new-access-token',
+    expires_in: 300
+  })
+
+  const accessToken = await refreshAccessToken({
+    idpTokenUrl: 'https://dispatcher-only.example.com/token',
+    clientId: 'client-id',
+    refreshToken: 'refresh-token',
+    dispatcher: dispatcherAgent
+  })
+  assert.deepStrictEqual(accessToken, { accessToken: 'new-access-token', expiresIn: 300 })
+})
