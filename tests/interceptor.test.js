@@ -588,3 +588,49 @@ test('do not intercept if url not passed in urls option', async (t) => {
   const { statusCode } = await request(`http://127.0.0.1:${server.address().port}`, { dispatcher })
   assert.strictEqual(statusCode, 200)
 })
+
+test('refresh the token through idpDispatcher when provided', async (t) => {
+  let accessToken = ''
+  const mainServer = http.createServer((req, res) => {
+    assert.strictEqual(req.headers.authorization, `Bearer ${accessToken}`)
+    res.writeHead(200)
+    res.end()
+  })
+  mainServer.listen(0)
+
+  const tokenServer = http.createServer((req, res) => {
+    assert.strictEqual(req.method, 'POST')
+    assert.strictEqual(req.url, '/token')
+
+    accessToken = createToken({ name: 'access' }, { expiresIn: '1d' })
+    res.writeHead(200)
+    res.end(JSON.stringify({ access_token: accessToken }))
+  })
+  tokenServer.listen(0)
+
+  t.after(() => {
+    mainServer.close()
+    tokenServer.close()
+  })
+
+  const targetUrl = `http://localhost:${mainServer.address().port}`
+  const idpTokenUrl = `http://localhost:${tokenServer.address().port}/token`
+
+  const routed = []
+  const idpDispatcher = new Agent().compose(dispatch => (opts, handler) => {
+    routed.push(`${opts.origin}${opts.path}`)
+    return dispatch(opts, handler)
+  })
+
+  const dispatcher = new Agent().compose(createOidcInterceptor({
+    urls: [targetUrl],
+    idpTokenUrl,
+    idpDispatcher,
+    clientId: 'client-id',
+    clientSecret: 'client-secret'
+  }))
+
+  const { statusCode } = await request(targetUrl, { dispatcher })
+  assert.strictEqual(statusCode, 200)
+  assert.deepStrictEqual(routed, [idpTokenUrl])
+})
