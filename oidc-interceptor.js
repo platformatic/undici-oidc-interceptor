@@ -26,7 +26,7 @@ function getTokenState (token) {
 }
 
 function createOidcInterceptor (options) {
-  const { refreshToken, clientSecret, contentType, shouldAuthenticate } = options
+  const { refreshToken, clientSecret, contentType, shouldAuthenticate, idpDispatcher } = options
   let {
     accessToken,
     retryOnStatusCodes,
@@ -44,7 +44,7 @@ function createOidcInterceptor (options) {
   retryOnStatusCodes = retryOnStatusCodes || [401]
   urls = urls || []
 
-  const store = new TokenStore(tokenStore)
+  const store = new TokenStore({ dispatcher: idpDispatcher, ...tokenStore })
 
   // TODO: if there is a refresh_token, we might not need the idpTokenUrl and use the standard
   // discovery mechanism. See

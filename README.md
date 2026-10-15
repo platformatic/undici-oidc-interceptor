@@ -117,6 +117,25 @@ await request('https://api.example.com/admin', {
 })
 ```
 
+## IdP dispatcher
+
+Token requests to `idpTokenUrl` go through the global undici dispatcher by
+default. Pass `idpDispatcher` to route them through your own — for example
+an `Agent` with `allowH2: true` when the IdP sits behind an HTTP/2-only
+front (AWS ALBs answer HTTP/1 requests to an HTTP/2 target group with a
+464):
+
+```js
+const idpAgent = new Agent({ allowH2: true })
+const agent = new Agent({ allowH2: true }).compose(createOidcInterceptor({
+  clientId: 'FILLME',
+  clientSecret: 'FILLME',
+  idpTokenUrl: 'https://your-idp.com/token',
+  idpDispatcher: idpAgent,
+  urls: ['https://api.example.com']
+}))
+```
+
 ## Token store
 
 This interceptor uses the [async-cache-dedupe](https://github.com/mcollina/async-cache-dedupe) package to cache access tokens. This improves efficiency by enabling token reuse across processes or instances and avoids unnecessary token refresh requests.
